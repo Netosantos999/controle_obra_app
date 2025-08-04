@@ -1,0 +1,18 @@
+{
+  "sectors": [
+    {"name": "Setor 1", "desc": "69kv", "color": "blue"},
+    {"name": "Setor 2", "desc": "13kv", "color": "green"},
+    {"name": "Setor 3", "desc": "Áreas remanescentes", "color": "yellow"},
+    {"name": "Setor 4", "desc": "Casa de Comando", "color": "red"},
+    {"name": "Setor 5", "desc": "Arrimo", "color": "purple"},
+    {"name": "Setor 6", "desc": "SOP", "color": "indigo"},
+    {"name": "Setor 7", "desc": "Complementares", "color": "pink"}
+  ],
+  "teams": [
+    {"name": "Equipe A", "sector": "Arrimo", "color": "blue"},
+    {"name": "Equipe B", "sector": "Postes", "color": "green"},
+    {"name": "Equipe C", "sector": "Canaletas", "color": "yellow"},
+    {"name": "Equipe D", "sector": "Drenagem", "color": "red"},
+    {"name": "Equipe F", "sector": "Casa Comando", "color": "purple"}
+  ]
+}
