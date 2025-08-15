@@ -1,0 +1,416 @@
+[
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "A tarefa 'Arrimo' foi atualizada.",
+    "time": "04/08 16:36"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "A tarefa 'Arrimo' foi atualizada.",
+    "time": "04/08 16:28"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "' Casa de Comando' atribuída à Equipe F.",
+    "time": "04/08 16:26"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "A tarefa 'Drenagem/Sanitário e Canaleta Casa de Comando' foi atualizada.",
+    "time": "04/08 16:23"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'Drenagem/Sanitário e Canaleta Casa de Comando' atribuída à Equipe A.",
+    "time": "04/08 16:23"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'Canaletas e Tubulações Elétricas Externas' atribuída à Equipe C.",
+    "time": "04/08 16:22"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "' Postes (perfuração, base de fundo, manilhas)' atribuída à Equipe B.",
+    "time": "04/08 16:21"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'Arrimo' atribuída à Equipe A.",
+    "time": "04/08 16:19"
+  },
+  {
+    "type": "⚙️",
+    "title": "Equipe Adicionada",
+    "desc": "A equipe 'Equipe F' foi criada.",
+    "time": "04/08 16:03"
+  },
+  {
+    "type": "⚙️",
+    "title": "Equipe Adicionada",
+    "desc": "A equipe 'Equipe D ' foi criada.",
+    "time": "04/08 16:03"
+  },
+  {
+    "type": "⚙️",
+    "title": "Equipe Adicionada",
+    "desc": "A equipe 'Equipe C' foi criada.",
+    "time": "04/08 16:03"
+  },
+  {
+    "type": "⚙️",
+    "title": "Setor Adicionado",
+    "desc": "O setor 'Setor 7' foi criado.",
+    "time": "04/08 16:02"
+  },
+  {
+    "type": "⚙️",
+    "title": "Setor Adicionado",
+    "desc": "O setor 'Setor 6' foi criado.",
+    "time": "04/08 16:02"
+  },
+  {
+    "type": "⚙️",
+    "title": "Setor Adicionado",
+    "desc": "O setor 'Setor 5' foi criado.",
+    "time": "04/08 16:01"
+  },
+  {
+    "type": "⚙️",
+    "title": "Setor Adicionado",
+    "desc": "O setor 'Setor 4' foi criado.",
+    "time": "04/08 16:01"
+  },
+  {
+    "type": "⚙️",
+    "title": "Setor Adicionado",
+    "desc": "O setor 'Setor 3 ' foi criado.",
+    "time": "04/08 15:59"
+  },
+  {
+    "type": "⚙️",
+    "title": "Setor Adicionado",
+    "desc": "O setor 'Setor 2' foi criado.",
+    "time": "04/08 15:59"
+  },
+  {
+    "type": "🗑️",
+    "title": "Tarefa Excluída",
+    "desc": "A tarefa 'ARRIMO' foi removida.",
+    "time": "04/08 14:53"
+  },
+  {
+    "type": "🗑️",
+    "title": "Tarefa Excluída",
+    "desc": "A tarefa 'ESCAVAÇÃO DE POSTES ' foi removida.",
+    "time": "04/08 14:53"
+  },
+  {
+    "type": "🗑️",
+    "title": "Equipe Removida",
+    "desc": "A equipe 'Equipe C' foi removida.",
+    "time": "04/08 14:52"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "A tarefa 'ARRIMO' foi atualizada.",
+    "time": "04/08 14:43"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "A tarefa 'ESCAVAÇÃO DE POSTES ' foi atualizada.",
+    "time": "04/08 14:43"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'ARRIMO' atribuída à Equipe A.",
+    "time": "04/08 13:39"
+  },
+  {
+    "type": "🗑️",
+    "title": "Tarefa Excluída",
+    "desc": "A tarefa 'ARRIMO' foi removida.",
+    "time": "04/08 13:38"
+  },
+  {
+    "type": "🔄",
+    "title": "Setor Atualizado",
+    "desc": "Setor 'Setor 1' foi atualizado para 'Setor 1'.",
+    "time": "04/08 13:38"
+  },
+  {
+    "type": "🗑️",
+    "title": "Funcionário Removido",
+    "desc": "O funcionário 'BBB' foi removido.",
+    "time": "04/08 13:31"
+  },
+  {
+    "type": "👤",
+    "title": "Novo Colaborador",
+    "desc": "BBB adicionado à equipe Equipe A.",
+    "time": "04/08 13:08"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'ESCAVAÇÃO DE POSTES ' atribuída à Equipe B.",
+    "time": "04/08 13:05"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'ARRIMO' atribuída à Equipe A.",
+    "time": "04/08 13:05"
+  },
+  {
+    "type": "🗑️",
+    "title": "Tarefa Excluída",
+    "desc": "A tarefa 'arrimo' foi removida.",
+    "time": "04/08 13:04"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "Progresso de 'arrimo' atualizado.",
+    "time": "04/08 12:43"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'arrimo' atribuída à Equipe A.",
+    "time": "04/08 12:42"
+  },
+  {
+    "type": "⚙️",
+    "title": "Setor Adicionado",
+    "desc": "O setor 'Setor 1' foi criado.",
+    "time": "04/08 12:42"
+  },
+  {
+    "type": "⚙️",
+    "title": "Equipe Adicionada",
+    "desc": "A equipe 'Equipe C' foi criada.",
+    "time": "04/08 12:41"
+  },
+  {
+    "type": "⚙️",
+    "title": "Equipe Adicionada",
+    "desc": "A equipe 'Equipe B' foi criada.",
+    "time": "04/08 12:41"
+  },
+  {
+    "type": "⚙️",
+    "title": "Equipe Adicionada",
+    "desc": "A equipe 'Equipe A' foi criada.",
+    "time": "04/08 12:41"
+  },
+  {
+    "type": "🗑️",
+    "title": "Tarefa Excluída",
+    "desc": "A tarefa 'PERFURAÇÕES POSTE 69KV' foi removida.",
+    "time": "04/08 12:40"
+  },
+  {
+    "type": "🗑️",
+    "title": "Tarefa Excluída",
+    "desc": "A tarefa 'ARRIMO' foi removida.",
+    "time": "04/08 12:33"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'PERFURAÇÕES POSTE 69KV' atribuída à None.",
+    "time": "04/08 12:32"
+  },
+  {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'ARRIMO' atribuída à None.",
+    "time": "04/08 12:32"
+  },
+  {
+    "type": "🗑️",
+    "title": "Equipe Removida",
+    "desc": "A equipe 'Equipe F' foi removida.",
+    "time": "04/08 12:31"
+  },
+  {
+    "type": "🗑️",
+    "title": "Equipe Removida",
+    "desc": "A equipe 'Equipe D' foi removida.",
+    "time": "04/08 12:31"
+  },
+  {
+    "type": "🗑️",
+    "title": "Equipe Removida",
+    "desc": "A equipe 'Equipe C' foi removida.",
+    "time": "04/08 12:31"
+  },
+  {
+    "type": "🗑️",
+    "title": "Equipe Removida",
+    "desc": "A equipe 'Equipe B' foi removida.",
+    "time": "04/08 12:31"
+  },
+  {
+    "type": "🗑️",
+    "title": "Funcionário Removido",
+    "desc": "O funcionário 'Ana Souza' foi removido.",
+    "time": "04/08 12:31"
+  },
+  {
+    "type": "🗑️",
+    "title": "Funcionário Removido",
+    "desc": "O funcionário 'Carlos Pereira' foi removido.",
+    "time": "04/08 12:30"
+  },
+  {
+    "type": "🗑️",
+    "title": "Funcionário Removido",
+    "desc": "O funcionário 'Maria Oliveira' foi removido.",
+    "time": "04/08 12:30"
+  },
+  {
+    "type": "🗑️",
+    "title": "Funcionário Removido",
+    "desc": "O funcionário 'João Silva' foi removido.",
+    "time": "04/08 12:30"
+  },
+  {
+    "type": "🗑️",
+    "title": "Equipe Removida",
+    "desc": "A equipe 'Equipe A' foi removida.",
+    "time": "04/08 12:29"
+  },
+  {
+    "type": "🗑️",
+    "title": "Setor Removido",
+    "desc": "O setor '2025-06-23' foi removido.",
+    "time": "04/08 12:23"
+  },
+  {
+    "type": "⚙️",
+    "title": "Setor Adicionado",
+    "desc": "O setor '2025-06-23' foi criado.",
+    "time": "04/08 12:23"
+  },
+  {
+    "type": "⚙️",
+    "title": "Equipe Adicionada",
+    "desc": "A equipe 'Equipe A' foi criada.",
+    "time": "04/08 12:13"
+  },
+  {
+    "type": "🗑️",
+    "title": "Equipe Removida",
+    "desc": "A equipe 'Equipe A' foi removida.",
+    "time": "04/08 12:12"
+  },
+  {
+    "type": "🗑️",
+    "title": "Setor Removido",
+    "desc": "O setor 'Setor 1' foi removido.",
+    "time": "04/08 12:12"
+  },
+  {
+    "type": "🗑️",
+    "title": "Setor Removido",
+    "desc": "O setor 'Setor 2' foi removido.",
+    "time": "04/08 12:12"
+  },
+  {
+    "type": "🗑️",
+    "title": "Setor Removido",
+    "desc": "O setor 'Setor 3' foi removido.",
+    "time": "04/08 12:12"
+  },
+  {
+    "type": "🗑️",
+    "title": "Setor Removido",
+    "desc": "O setor 'Setor 4' foi removido.",
+    "time": "04/08 12:12"
+  },
+  {
+    "type": "🗑️",
+    "title": "Setor Removido",
+    "desc": "O setor 'Setor 5' foi removido.",
+    "time": "04/08 12:12"
+  },
+  {
+    "type": "🗑️",
+    "title": "Setor Removido",
+    "desc": "O setor 'Setor 6' foi removido.",
+    "time": "04/08 12:12"
+  },
+  {
+    "type": "🗑️",
+    "title": "Setor Removido",
+    "desc": "O setor 'Setor 7' foi removido.",
+    "time": "04/08 12:11"
+  },
+  {
+    "type": "🗑️",
+    "title": "Tarefa Excluída",
+    "desc": "A tarefa 'Perfuração postes Setor 1' foi removida.",
+    "time": "04/08 09:54"
+  },
+  {
+    "type": "🗑️",
+    "title": "Tarefa Excluída",
+    "desc": "A tarefa 'Drenagem Setor 4' foi removida.",
+    "time": "04/08 09:53"
+  },
+  {
+    "type": "🗑️",
+    "title": "Tarefa Excluída",
+    "desc": "A tarefa 'Instalação de Canaletas' foi removida.",
+    "time": "04/08 09:53"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "Progresso de 'Instalação de Canaletas' atualizado para 0%.",
+    "time": "04/08 09:50"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "Progresso de 'Drenagem Setor 4' atualizado para 0%.",
+    "time": "04/08 09:50"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "Progresso de 'Perfuração postes Setor 1' atualizado para 0%.",
+    "time": "04/08 09:50"
+  },
+  {
+    "type": "calendar",
+    "title": "Tarefa Atualizada via Gantt",
+    "desc": "'Perfuração postes Setor 1' foi reagendada.",
+    "time": "04/08 08:41"
+  },
+  {
+    "type": "check",
+    "title": "Tarefa concluída",
+    "desc": "Equipe D concluiu: Drenagem Setor 4",
+    "time": "04/08 07:32"
+  },
+  {
+    "type": "check",
+    "title": "Sistema iniciado",
+    "desc": "Projeto criado com sucesso",
+    "time": "Hoje"
+  }
+]

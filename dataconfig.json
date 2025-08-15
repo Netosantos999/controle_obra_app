@@ -1,0 +1,49 @@
+{
+  "sectors": [
+    {
+      "name": "Setor 1",
+      "desc": "arrimo"
+    },
+    {
+      "name": "Setor 2",
+      "desc": "área de 13kv"
+    },
+    {
+      "name": "Setor 3 ",
+      "desc": "áreas remanescentes"
+    },
+    {
+      "name": "Setor 4",
+      "desc": "Casa de Comando"
+    },
+    {
+      "name": "Setor 5",
+      "desc": " Arrimo"
+    },
+    {
+      "name": "Setor 6",
+      "desc": "SOP"
+    },
+    {
+      "name": "Setor 7",
+      "desc": "Complementares (urbanismo, muros, CFTV, etc)"
+    }
+  ],
+  "teams": [
+    {
+      "name": "Equipe A"
+    },
+    {
+      "name": "Equipe B"
+    },
+    {
+      "name": "Equipe C"
+    },
+    {
+      "name": "Equipe D "
+    },
+    {
+      "name": "Equipe F"
+    }
+  ]
+}
