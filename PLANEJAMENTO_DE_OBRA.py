@@ -154,7 +154,8 @@ with tab1:
         overall_progress = df_tasks['progress'].mean() if not df_tasks.empty else 0
         
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Progresso Geral", f"{overall_progress:.1%}", help="Média de progresso de todas as tarefas.")
+        # LINHA CORRIGIDA ABAIXO
+        col1.metric("Progresso Geral", f"{overall_progress:.1f}%", help="Média de progresso de todas as tarefas.")
         col2.metric("Total de Tarefas", total_tasks)
         col3.metric("Tarefas Concluídas", completed_tasks)
         col4.metric("Tarefas Pendentes", pending_tasks)
