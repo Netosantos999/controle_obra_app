@@ -1,3 +1,46 @@
 {
-  "employees": []
+  "employees": [
+    {
+      "id": "a4336969-a32f-4bc4-a7e5-233c9436d00b",
+      "name": "MANOEL DA COCEIÇÃO ",
+      "team": "Equipe A",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "3554a6dc-b911-436a-8f5b-d9883583ddb5",
+      "name": "BRUNO DOS SANTOS ROCHA",
+      "team": "Equipe A",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "4ec620c6-55c2-41b3-8ca8-83f987bfb905",
+      "name": "DAMIÃO PEREIRA DOS SANTOS",
+      "team": "Equipe A",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "6ac9e8c0-2459-4214-8820-4572cf32c1e7",
+      "name": "EUCLIDES REINALDO CARLOS",
+      "team": "Equipe A",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "ef74308a-4c35-40aa-b564-883129e4226f",
+      "name": "ROBERTO DE SOUSA GERMANO",
+      "team": "Equipe A",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "c449e0bb-d96d-4401-b1aa-e62cbcca7e0e",
+      "name": "SERGIO PEREIRA DOS SANTOS",
+      "team": "Equipe A",
+      "role": "ENCARREGADO"
+    },
+    {
+      "id": "1d164154-87a6-4b23-9c5c-35c392cf2f9c",
+      "name": "ANTONIO ROCICLEUDO GOMES DOS SANTOS",
+      "team": "Equipe A",
+      "role": "SERVENTE"
+    }
+  ]
 }
