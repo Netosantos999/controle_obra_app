@@ -136,7 +136,7 @@
       "id": "814953f7-9e53-4574-9a82-8eb50825b5bb",
       "name": "DIEGO PEREIRA FERINO MACEDO",
       "team": "Equipe F",
-      "role": "SERVENETE"
+      "role": "SERVENTE"
     },
     {
       "id": "b5fe7555-8dd9-4c8c-9662-623eb1a2c702",
@@ -148,6 +148,36 @@
       "id": "37b5d5dc-1b80-4a62-ad8e-14588b8db9dc",
       "name": "CARLOS JOSE FERREIRA DA SILVA",
       "team": "Equipe F",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "7557ae70-135e-44e6-8701-632a924fabdb",
+      "name": "COSMO ACASSIO DE SOUSA NOGUEIRA",
+      "team": "Equipe G",
+      "role": "OPERADOR DE BETONEIRA"
+    },
+    {
+      "id": "67138740-3471-4df5-b9a0-cf2a1491cfb3",
+      "name": "SILVERLAN DE SOUZA NOGUEIRA",
+      "team": "Equipe G",
+      "role": "OPERADOR DE BETONEIRA"
+    },
+    {
+      "id": "1e660a76-da74-437f-9244-e3f9e17b37a6",
+      "name": "ERIVALDO BRANDÃO SOUSA",
+      "team": "Equipe G",
+      "role": "OPERADOR  DE BETONEIRA"
+    },
+    {
+      "id": "99902298-ad57-4c0a-9574-c877710885a4",
+      "name": "TALES VICTOR OLIVEIRA SILVA",
+      "team": "Equipe G",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "e7890100-09af-41b9-8302-d3962e5f08bd",
+      "name": "CARLOS JOSE FERREIRA DA SILVA",
+      "team": "Equipe G",
       "role": "SERVENTE"
     }
   ]

@@ -291,10 +291,11 @@ with tab2:
         st.info("Nenhuma tarefa encontrada com os filtros atuais.")
     else:
         for index, task in enumerate(filtered_tasks):
-            with st.expander(f"**{task.get('name', 'Tarefa sem nome')}** | `{task.get('team', 'Sem equipe')}` | `{task.get('sector', 'Sem setor')}`"):
+            expander_key = f"expander_{task['id']}"
+            with st.expander(f"**{task.get('name', 'Tarefa sem nome')}** | `{task.get('team', 'Sem equipe')}` | `{task.get('sector', 'Sem setor')}`", expanded=False):
                 original_task = task.copy()
 
-                # === NOVO BLOCO: MOSTRAR COLABORADORES DA EQUIPE ===
+                # === MOSTRAR COLABORADORES DA EQUIPE ===
                 team_name = task.get("team", "")
                 employees = st.session_state.people.get("employees", [])
                 team_members = [e for e in employees if e.get("team") == team_name]
@@ -302,19 +303,22 @@ with tab2:
                 if team_members:
                     st.markdown("##### 👥 Colaboradores da Equipe")
                     df_team = pd.DataFrame(team_members)[["name", "role"]]
-                    st.dataframe(df_team, use_container_width=True, hide_index=True)
+                    st.dataframe(
+                        df_team,
+                        use_container_width=True,
+                        hide_index=True,
+                        key=f"df_team_{task['id']}"
+                    )
                 else:
                     st.info("Nenhum colaborador cadastrado nesta equipe.")
-                # ===================================================
 
+                # === CAMPOS DE EDIÇÃO DA TAREFA ===
                 col1, col2, col3, col4 = st.columns([3, 2, 2, 3])
                 
                 new_name = col1.text_input("Nome", value=task.get('name', ''), key=f"name_{task['id']}")
                 
                 team_name = task.get('team')
-                current_team_index = None
-                if team_name in available_teams:
-                    current_team_index = available_teams.index(team_name)
+                current_team_index = available_teams.index(team_name) if team_name in available_teams else None
                 new_team = col2.selectbox(
                     "Equipe", 
                     available_teams, 
@@ -324,9 +328,7 @@ with tab2:
                 )
                 
                 sector_name = task.get('sector')
-                current_sector_index = None
-                if sector_name in available_sectors:
-                    current_sector_index = available_sectors.index(sector_name)
+                current_sector_index = available_sectors.index(sector_name) if sector_name in available_sectors else None
                 new_sector = col3.selectbox(
                     "Setor", 
                     available_sectors, 
@@ -371,6 +373,7 @@ with tab2:
                     if c2.button("Cancelar", key=f"cancel_del_{task['id']}", use_container_width=True):
                         del st.session_state['confirm_delete']
                         st.rerun()
+
 
 
 # --- ABA 3: GESTÃO DE PESSOAL ---
