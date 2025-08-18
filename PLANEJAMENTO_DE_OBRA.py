@@ -154,7 +154,6 @@ with tab1:
         overall_progress = df_tasks['progress'].mean() if not df_tasks.empty else 0
         
         col1, col2, col3, col4 = st.columns(4)
-        # LINHA CORRIGIDA ABAIXO
         col1.metric("Progresso Geral", f"{overall_progress:.1f}%", help="Média de progresso de todas as tarefas.")
         col2.metric("Total de Tarefas", total_tasks)
         col3.metric("Tarefas Concluídas", completed_tasks)
@@ -393,6 +392,7 @@ with tab3:
         st.dataframe(df_people, use_container_width=True, hide_index=True,
                      on_select="rerun", selection_mode="single-row")
         
+        # <<< INÍCIO DO BLOCO DE CÓDIGO ADICIONADO/MODIFICADO >>>
         selection = st.session_state.get("on_select", {}).get("selection", {})
         if selection and selection.get("rows"):
             selected_index = selection["rows"][0]
@@ -422,6 +422,7 @@ with tab3:
                         add_activity("delete", "Funcionário Removido", f"O funcionário '{deleted_employee['name']}' foi removido.")
                         st.warning(f"Funcionário '{deleted_employee['name']}' removido.")
                         st.rerun()
+        # <<< FIM DO BLOCO DE CÓDIGO ADICIONADO/MODIFICADO >>>
 
 # --- ABA 4: GESTÃO DE CONFIGURAÇÕES ---
 with tab4:
