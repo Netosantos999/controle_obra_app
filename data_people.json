@@ -41,6 +41,84 @@
       "name": "ANTONIO ROCICLEUDO GOMES DOS SANTOS",
       "team": "Equipe A",
       "role": "SERVENTE"
+    },
+    {
+      "id": "e6f2db3c-e0c9-4362-9bf1-019ce998dee8",
+      "name": "JACKSON SARAIVA DA SILVA",
+      "team": "Equipe B",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "603ef01d-76d2-4336-b485-e7697bac5eb2",
+      "name": "JOSE EDILSON MESQUITA MOTA",
+      "team": "Equipe B",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "a0e17ad4-500b-4dc9-a3a5-39922b866db5",
+      "name": "JARDEL QUEIROZ GOMES DA SILVA",
+      "team": "Equipe B",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "c7319937-1733-41ed-a90f-ce648d63804e",
+      "name": "BRENO DA SILVA LEMOS",
+      "team": "Equipe B",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "9d844d79-3f0c-4649-9860-6e5f7869eed2",
+      "name": "LUCAS FERREIRA DA SILVA",
+      "team": "Equipe B",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "ff87b833-bea5-4d08-8a96-47322ccdcbb0",
+      "name": "CANDIDO MARTINS DE SOUSA",
+      "team": "Equipe C",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "7fbd505d-d5d7-44b0-a0c7-eea8f8b10987",
+      "name": "ANTONIO ELAILSON DA SILVA",
+      "team": "Equipe C",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "c1e7be1f-d3c1-40ef-9504-3c4646d66f12",
+      "name": "ROBERTO DE SOUSA GERMANO",
+      "team": "Equipe D",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "1fbe6026-48aa-4f47-b164-4f365035cc14",
+      "name": "ANTONIO SERGIO ALMEIDA LIMA",
+      "team": "Equipe D",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "67dcbf51-1769-4f82-bed7-ba6f05fe1f8a",
+      "name": "DIEGO PEREIRA FERINO MACEDO",
+      "team": "Equipe D",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "5c5919b0-0a34-4f4b-870e-491888655d1c",
+      "name": "FRANCISCO NILTON QUEIROZ SILVA",
+      "team": "Equipe D",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "ac174537-80fb-440a-9a7f-f85aebeac746",
+      "name": "JOSE BRUNO DE LIMA RAFAEL",
+      "team": "Equipe F",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "b3db152c-00c8-45e9-9a13-c12bb8de22f9",
+      "name": "LUCAS SILVA ALMEIDA ",
+      "team": "Equipe F",
+      "role": "SERVENTE"
     }
   ]
 }
