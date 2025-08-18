@@ -298,7 +298,6 @@ with tab2:
                 
                 new_name = col1.text_input("Nome", value=task.get('name', ''), key=f"name_{task['id']}")
                 
-                # Bloco corrigido para Equipe
                 team_name = task.get('team')
                 current_team_index = None
                 if team_name in available_teams:
@@ -311,7 +310,6 @@ with tab2:
                     key=f"team_{task['id']}"
                 )
                 
-                # Bloco corrigido para Setor
                 sector_name = task.get('sector')
                 current_sector_index = None
                 if sector_name in available_sectors:
@@ -390,10 +388,9 @@ with tab3:
     else:
         df_people = pd.DataFrame(employees)
         st.dataframe(df_people, use_container_width=True, hide_index=True,
-                     on_select="rerun", selection_mode="single-row")
+                     on_select="rerun", selection_mode="single-row", key="employee_selector")
         
-        # <<< INÍCIO DO BLOCO DE CÓDIGO ADICIONADO/MODIFICADO >>>
-        selection = st.session_state.get("on_select", {}).get("selection", {})
+        selection = st.session_state.get("employee_selector", {}).get("selection", {})
         if selection and selection.get("rows"):
             selected_index = selection["rows"][0]
             if selected_index < len(employees):
@@ -422,7 +419,6 @@ with tab3:
                         add_activity("delete", "Funcionário Removido", f"O funcionário '{deleted_employee['name']}' foi removido.")
                         st.warning(f"Funcionário '{deleted_employee['name']}' removido.")
                         st.rerun()
-        # <<< FIM DO BLOCO DE CÓDIGO ADICIONADO/MODIFICADO >>>
 
 # --- ABA 4: GESTÃO DE CONFIGURAÇÕES ---
 with tab4:
@@ -510,7 +506,7 @@ with tab4:
                                 if emp.get('team') == old_name:
                                     emp['team'] = new_name
                             DataManager.save(PEOPLE_FILE, st.session_state.people)
-                            add_activity("update", "Equipe Atualizada", f"Equipe '{old_name}' atualizada para '{new_name}'.")
+                            add_activity("update", "Equipe Atualizada", f"Equipe '{old_name}' atualizado para '{new_name}'.")
                             st.rerun()
                         else:
                             st.error("Nome inválido ou já existente.")
