@@ -9,7 +9,7 @@
       "desc": "área de 13kv"
     },
     {
-      "name": "Setor 3 ",
+      "name": "Setor 3",
       "desc": "áreas remanescentes"
     },
     {
@@ -40,7 +40,10 @@
       "name": "Equipe C"
     },
     {
-      "name": "Equipe D "
+      "name": "Equipe D"
+    },
+    {
+      "name": "Equipe E"
     },
     {
       "name": "Equipe F"

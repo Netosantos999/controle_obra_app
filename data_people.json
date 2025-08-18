@@ -31,12 +31,6 @@
       "role": "PEDREIRO"
     },
     {
-      "id": "c449e0bb-d96d-4401-b1aa-e62cbcca7e0e",
-      "name": "SERGIO PEREIRA DOS SANTOS",
-      "team": "Equipe A",
-      "role": "ENCARREGADO"
-    },
-    {
       "id": "1d164154-87a6-4b23-9c5c-35c392cf2f9c",
       "name": "ANTONIO ROCICLEUDO GOMES DOS SANTOS",
       "team": "Equipe A",
@@ -111,12 +105,48 @@
     {
       "id": "ac174537-80fb-440a-9a7f-f85aebeac746",
       "name": "JOSE BRUNO DE LIMA RAFAEL",
-      "team": "Equipe F",
+      "team": "Equipe E",
       "role": "PEDREIRO"
     },
     {
       "id": "b3db152c-00c8-45e9-9a13-c12bb8de22f9",
       "name": "LUCAS SILVA ALMEIDA ",
+      "team": "Equipe E",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "13361d53-5f9b-4f1d-919d-eb739d8c65a0",
+      "name": "ANTONIO RAFAEL DE OLIVEIRA MACIEL ",
+      "team": "Equipe F",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "d8824312-7aa4-4b73-9e20-6ba9c81e6cfb",
+      "name": "FRANCISCO PAULO CARLOS DE SOUSA",
+      "team": "Equipe F",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "c37af16a-6341-4c0b-870f-15b2f0e9036d",
+      "name": "DIANEY BARBOSA PEIXOTO ",
+      "team": "Equipe F",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "814953f7-9e53-4574-9a82-8eb50825b5bb",
+      "name": "DIEGO PEREIRA FERINO MACEDO",
+      "team": "Equipe F",
+      "role": "SERVENETE"
+    },
+    {
+      "id": "b5fe7555-8dd9-4c8c-9662-623eb1a2c702",
+      "name": "CAIO BARROZO FERREIRA",
+      "team": "Equipe F",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "37b5d5dc-1b80-4a62-ad8e-14588b8db9dc",
+      "name": "CARLOS JOSE FERREIRA DA SILVA",
       "team": "Equipe F",
       "role": "SERVENTE"
     }

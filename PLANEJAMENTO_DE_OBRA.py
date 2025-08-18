@@ -293,7 +293,20 @@ with tab2:
         for index, task in enumerate(filtered_tasks):
             with st.expander(f"**{task.get('name', 'Tarefa sem nome')}** | `{task.get('team', 'Sem equipe')}` | `{task.get('sector', 'Sem setor')}`"):
                 original_task = task.copy()
-                
+
+                # === NOVO BLOCO: MOSTRAR COLABORADORES DA EQUIPE ===
+                team_name = task.get("team", "")
+                employees = st.session_state.people.get("employees", [])
+                team_members = [e for e in employees if e.get("team") == team_name]
+
+                if team_members:
+                    st.markdown("##### 👥 Colaboradores da Equipe")
+                    df_team = pd.DataFrame(team_members)[["name", "role"]]
+                    st.dataframe(df_team, use_container_width=True, hide_index=True)
+                else:
+                    st.info("Nenhum colaborador cadastrado nesta equipe.")
+                # ===================================================
+
                 col1, col2, col3, col4 = st.columns([3, 2, 2, 3])
                 
                 new_name = col1.text_input("Nome", value=task.get('name', ''), key=f"name_{task['id']}")
@@ -358,6 +371,7 @@ with tab2:
                     if c2.button("Cancelar", key=f"cancel_del_{task['id']}", use_container_width=True):
                         del st.session_state['confirm_delete']
                         st.rerun()
+
 
 # --- ABA 3: GESTÃO DE PESSOAL ---
 with tab3:
