@@ -432,10 +432,23 @@ with tab3:
         st.info("Nenhum funcionário cadastrado.")
     else:
         df_people = pd.DataFrame(employees)
-        st.dataframe(df_people, use_container_width=True, hide_index=True,
-                     on_select="rerun" if is_admin else None,
-                     selection_mode="single-row" if is_admin else None,
-                     key="employee_selector")
+        
+        # --- CÓDIGO CORRIGIDO ---
+        # 1. Define os argumentos base do dataframe
+        dataframe_args = {
+            "use_container_width": True,
+            "hide_index": True,
+            "key": "employee_selector"
+        }
+        
+        # 2. Adiciona os argumentos de seleção apenas se for admin
+        if is_admin:
+            dataframe_args["on_select"] = "rerun"
+            dataframe_args["selection_mode"] = "single-row"
+            
+        # 3. Chama o dataframe desempacotando os argumentos
+        st.dataframe(df_people, **dataframe_args)
+        # --- FIM DA CORREÇÃO ---
         
         if is_admin:
             selection = st.session_state.get("employee_selector", {}).get("selection", {})
@@ -657,3 +670,4 @@ with tab5:
                 st.plotly_chart(fig_gantt_report, use_container_width=True)
             else:
                 st.info("Datas de início/fim inválidas ou insuficientes para gerar o cronograma das tarefas filtradas.")
+                
