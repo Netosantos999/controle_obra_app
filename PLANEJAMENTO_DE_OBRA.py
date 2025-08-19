@@ -1,4 +1,4 @@
-# PLANEJAMENTO_DE_OBRA.py (Versão Completa e Corrigida)
+# PLANEJAMENTO_DE_OBRA.py (Versão Completa e Corrigida com Relatório Detalhado)
 import streamlit as st
 import json
 import os
@@ -53,28 +53,6 @@ class DataManager:
 
 # --- FUNÇÕES DE LÓGICA DE NEGÓCIO E UI ---
 
-def initialize_state():
-    """Carrega todos os dados para o estado da sessão na inicialização."""
-    if 'initialized' not in st.session_state:
-        st.session_state.config = DataManager.load(CONFIG_FILE, {"sectors": [], "teams": []})
-        st.session_state.people = DataManager.load(PEOPLE_FILE, {"employees": []})
-        st.session_state.tasks = DataManager.load(TASKS_FILE, [])
-        st.session_state.activities = DataManager.load(ACTIVITIES_FILE, [])
-
-        # Normaliza nomes de equipes e setores para remover espaços extras
-        for team in st.session_state.config.get("teams", []):
-            team['name'] = team['name'].strip()
-        for sector in st.session_state.config.get("sectors", []):
-            sector['name'] = sector['name'].strip()
-
-        # Garante que cada tarefa tenha um ID único e status atualizado
-        for task in st.session_state.tasks:
-            if 'id' not in task:
-                task['id'] = str(uuid.uuid4())
-            task['status'] = get_task_status(task)
-        
-        st.session_state.initialized = True
-
 def get_task_status(task):
     """Retorna o status de uma tarefa com base no seu progresso."""
     progress = task.get('progress', 0)
@@ -99,6 +77,36 @@ def save_tasks_state():
     """Salva o estado das tarefas e cria um backup."""
     DataManager.save(TASKS_FILE, st.session_state.tasks)
     DataManager.backup_tasks()
+
+def get_team_members_info(team_name):
+    """Retorna uma string formatada com nomes e funções dos membros de uma equipe."""
+    employees = st.session_state.people.get("employees", [])
+    team_members = [e for e in employees if e.get("team") == team_name]
+    if team_members:
+        return ", ".join([f"{m['name']} ({m['role']})" for m in team_members])
+    return "Nenhum colaborador"
+
+def initialize_state():
+    """Carrega todos os dados para o estado da sessão na inicialização."""
+    if 'initialized' not in st.session_state:
+        st.session_state.config = DataManager.load(CONFIG_FILE, {"sectors": [], "teams": []})
+        st.session_state.people = DataManager.load(PEOPLE_FILE, {"employees": []})
+        st.session_state.tasks = DataManager.load(TASKS_FILE, [])
+        st.session_state.activities = DataManager.load(ACTIVITIES_FILE, [])
+
+        # Normaliza nomes de equipes e setores para remover espaços extras
+        for team in st.session_state.config.get("teams", []):
+            team['name'] = team['name'].strip()
+        for sector in st.session_state.config.get("sectors", []):
+            sector['name'] = sector['name'].strip()
+
+        # Garante que cada tarefa tenha um ID único e status atualizado
+        for task in st.session_state.tasks:
+            if 'id' not in task:
+                task['id'] = str(uuid.uuid4())
+            task['status'] = get_task_status(task)
+        
+        st.session_state.initialized = True
 
 
 # --- INICIALIZAÇÃO DA APLICAÇÃO ---
@@ -134,7 +142,7 @@ with st.sidebar:
 # --- PÁGINA PRINCIPAL ---
 # =================================================================================
 st.header("Painel de Acompanhamento de Obra")
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📋 Gestão de Tarefas", "👷 Gestão de Pessoal", "⚙️ Gestão de Configurações"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Dashboard", "📋 Gestão de Tarefas", "👷 Gestão de Pessoal", "⚙️ Gestão de Configurações", "📈 Relatórios Detalhados"])
 
 # =================================================================================
 # --- ABA 1: DASHBOARD ---
@@ -533,3 +541,107 @@ with tab4:
                         DataManager.save(CONFIG_FILE, st.session_state.config)
                         add_activity("delete", "Equipe Removida", f"A equipe '{old_name}' foi removida.")
                         st.rerun()
+
+# =================================================================================
+# --- ABA 5: RELATÓRIOS DETALHADOS ---
+# =================================================================================
+# =================================================================================
+# --- ABA 5: RELATÓRIOS DETALHADOS ---
+# =================================================================================
+with tab5:
+    st.subheader("Relatório Detalhado por Atividade")
+
+    if not st.session_state.tasks:
+        st.info("Nenhuma tarefa cadastrada para gerar relatórios.")
+    else:
+        df_tasks = pd.DataFrame(st.session_state.tasks)
+        df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'])
+        df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'])
+
+        # Filtro por Equipe
+        all_teams = ["Todas"] + sorted(df_tasks['team'].unique().tolist())
+        selected_team_report = st.selectbox("Filtrar por Equipe:", all_teams, key="report_team_filter")
+
+        # Filtro por Setor
+        all_sectors = ["Todos"] + sorted(df_tasks['sector'].unique().tolist())
+        selected_sector_report = st.selectbox("Filtrar por Setor:", all_sectors, key="report_sector_filter")
+
+        # Filtro por Status
+        all_statuses = ["Todos"] + sorted(df_tasks['status'].unique().tolist())
+        selected_status_report = st.selectbox("Filtrar por Status:", all_statuses, key="report_status_filter")
+
+        # Aplicar filtros
+        filtered_report_tasks = df_tasks.copy()
+        if selected_team_report != "Todas":
+            filtered_report_tasks = filtered_report_tasks[filtered_report_tasks['team'] == selected_team_report]
+        if selected_sector_report != "Todos":
+            filtered_report_tasks = filtered_report_tasks[filtered_report_tasks['sector'] == selected_sector_report]
+        if selected_status_report != "Todos":
+            filtered_report_tasks = filtered_report_tasks[filtered_report_tasks['status'] == selected_status_report]
+
+        if filtered_report_tasks.empty:
+            st.warning("Nenhuma tarefa encontrada com os filtros selecionados.")
+        else:
+            st.markdown("---")
+            st.markdown("### Visão Geral das Tarefas Filtradas")
+            col_metrics_report1, col_metrics_report2, col_metrics_report3 = st.columns(3)
+            col_metrics_report1.metric("Total de Tarefas", len(filtered_report_tasks))
+            col_metrics_report2.metric("Tarefas Concluídas", len(filtered_report_tasks[filtered_report_tasks['status'] == 'Concluída']))
+            col_metrics_report3.metric("Progresso Médio", f"{filtered_report_tasks['progress'].mean():.1f}%")
+
+            st.markdown("---")
+            st.markdown("### Detalhes das Tarefas")
+
+            # Exibir cada tarefa em expander com lista de colaboradores
+            for _, row in filtered_report_tasks.iterrows():
+                with st.expander(f"📌 {row['name']} | Equipe: {row['team']} | Setor: {row['sector']}"):
+                    st.write(f"**Status:** {row['status']} | **Progresso:** {row['progress']}%")
+                    st.write(f"**Início:** {row['created_at'].strftime('%d/%m/%Y')} | **Vencimento:** {row['due_date'].strftime('%d/%m/%Y')}")
+
+                    team_name = row['team']
+                    all_employees = st.session_state.people.get("employees", [])
+                    team_members_list = [emp for emp in all_employees if emp.get("team") == team_name]
+
+                    if team_members_list:
+                        st.markdown("👥 **Colaboradores da Equipe:**")
+                        df_colab = pd.DataFrame(team_members_list)[['name', 'role']]
+                        st.dataframe(df_colab, use_container_width=True, hide_index=True)
+                    else:
+                        st.info("Nenhum colaborador cadastrado para esta equipe.")
+
+            # A INDENTAÇÃO AQUI FOI CORRIGIDA
+            st.markdown("---")
+            st.markdown("### Gráficos do Relatório")
+
+            # Gráfico de Progresso por Equipe
+            st.markdown("##### Progresso Médio por Equipe (Filtrado)")
+            progress_by_team_report = filtered_report_tasks.groupby('team')['progress'].mean().reset_index()
+            fig_progress_team_report = px.bar(progress_by_team_report, x='team', y='progress',
+                                               title='Progresso Médio por Equipe',
+                                               labels={'team': 'Equipe', 'progress': 'Progresso Médio (%)'})
+            st.plotly_chart(fig_progress_team_report, use_container_width=True)
+
+            # Gráfico de Status por Setor
+            st.markdown("##### Distribuição de Status por Setor (Filtrado)")
+            status_by_sector_report = filtered_report_tasks.groupby(['sector', 'status']).size().reset_index(name='count')
+            fig_status_sector_report = px.bar(status_by_sector_report, x='sector', y='count', color='status',
+                                              title='Distribuição de Status por Setor',
+                                              labels={'sector': 'Setor', 'count': 'Nº de Tarefas'},
+                                              color_discrete_map={'Concluída':'#2ca02c', 'Em Andamento':'#ff7f0e', 'Planejada':'#1f77b4'})
+            st.plotly_chart(fig_status_sector_report, use_container_width=True)
+
+            # Gráfico de Gantt para as tarefas filtradas
+            st.markdown("##### Cronograma das Tarefas Filtradas")
+            gantt_data_report = [
+                dict(Task=t.get("name"), Start=t.get("created_at"), Finish=t.get("due_date"), Resource=t.get("team"))
+                for t in filtered_report_tasks.to_dict('records')
+            ]
+            df_gantt_report = pd.DataFrame(gantt_data_report)
+
+            if not df_gantt_report.empty and not df_gantt_report['Start'].isnull().all() and not df_gantt_report['Finish'].isnull().all():
+                fig_gantt_report = px.timeline(df_gantt_report, x_start="Start", x_end="Finish", y="Task", color="Resource",
+                                               title="Linha do Tempo das Tarefas Filtradas")
+                fig_gantt_report.update_yaxes(autorange="reversed")
+                st.plotly_chart(fig_gantt_report, use_container_width=True)
+            else:
+                st.info("Datas de início/fim inválidas ou insuficientes para gerar o cronograma das tarefas filtradas.")
