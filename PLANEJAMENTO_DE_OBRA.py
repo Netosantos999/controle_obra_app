@@ -1,4 +1,4 @@
-# PLANEJAMENTO_DE_OBRA.py (Versão Completa e Corrigida com Relatório Detalhado)
+# PLANEJAMENTO_DE_OBRA.py (Versão Completa com Controle de Acesso)
 import streamlit as st
 import json
 import os
@@ -51,8 +51,41 @@ class DataManager:
             st.toast("Backup das tarefas criado com sucesso!", icon="💾")
 
 
-# --- FUNÇÕES DE LÓGICA DE NEGÓCIO E UI ---
+# --- FUNÇÃO DE AUTENTICAÇÃO ---
+def check_authentication():
+    """Exibe um formulário de login e retorna o status de autenticação."""
+    if 'user_role' not in st.session_state:
+        st.session_state['user_role'] = None
 
+    if st.session_state['user_role'] is None:
+        st.title("🏗️ Gestor de Obras Pro+")
+        st.header("Controle de Acesso")
+
+        placeholder = st.empty()
+        with placeholder.form("login_form"):
+            st.markdown("Para editar os dados, por favor, insira a chave de acesso.")
+            access_key = st.text_input("Chave de Acesso", type="password")
+
+            col1, col2 = st.columns([1, 1.3])
+
+            if col1.form_submit_button("🔑 Entrar como Admin", use_container_width=True):
+                if access_key == st.secrets.get("ACCESS_KEY"):
+                    st.session_state['user_role'] = 'admin'
+                    placeholder.empty()
+                    st.rerun()
+                else:
+                    st.error("Chave de acesso inválida.")
+
+            if col2.form_submit_button("👁️ Continuar em modo de visualização", use_container_width=True):
+                st.session_state['user_role'] = 'viewer'
+                placeholder.empty()
+                st.rerun()
+        return False # Bloqueia a execução do resto do app
+
+    return True # Permite a execução do resto do app
+
+
+# --- FUNÇÕES DE LÓGICA DE NEGÓCIO E UI ---
 def get_task_status(task):
     """Retorna o status de uma tarefa com base no seu progresso."""
     progress = task.get('progress', 0)
@@ -105,12 +138,16 @@ def initialize_state():
             if 'id' not in task:
                 task['id'] = str(uuid.uuid4())
             task['status'] = get_task_status(task)
-        
+
         st.session_state.initialized = True
 
 
 # --- INICIALIZAÇÃO DA APLICAÇÃO ---
+if not check_authentication():
+    st.stop()
+
 initialize_state()
+is_admin = st.session_state.get('user_role') == 'admin'
 
 
 # =================================================================================
@@ -118,6 +155,11 @@ initialize_state()
 # =================================================================================
 with st.sidebar:
     st.title("🏗️ Gestor de Obras Pro+")
+    if is_admin:
+        st.success("Modo de Edição (Admin)")
+    else:
+        st.warning("Modo de Visualização")
+
     st.markdown("---")
     st.header("Feed de Atividades")
     for activity in st.session_state.activities[:5]:
@@ -130,11 +172,11 @@ with st.sidebar:
         else:
             team_names = [t['name'] for t in st.session_state.config.get("teams", [])]
             selected_team = st.selectbox("Filtrar por Equipe", ["Todas"] + team_names, key="sb_team_filter")
-            
+
             df_emp = pd.DataFrame(employees)
             if selected_team != "Todas":
                 df_emp = df_emp[df_emp['team'] == selected_team]
-            
+
             st.dataframe(df_emp, use_container_width=True, hide_index=True)
 
 
@@ -154,13 +196,13 @@ with tab1:
     else:
         df_tasks = pd.DataFrame(st.session_state.tasks)
         df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'], errors='coerce')
-        
+
         # --- MÉTRICAS PRINCIPAIS ---
         total_tasks = len(df_tasks)
         completed_tasks = len(df_tasks[df_tasks['status'] == 'Concluída'])
         pending_tasks = total_tasks - completed_tasks
         overall_progress = df_tasks['progress'].mean() if not df_tasks.empty else 0
-        
+
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Progresso Geral", f"{overall_progress:.1f}%", help="Média de progresso de todas as tarefas.")
         col2.metric("Total de Tarefas", total_tasks)
@@ -216,7 +258,7 @@ with tab1:
             df_tasks_pending['due_category'] = df_tasks_pending['due_date'].apply(get_due_category)
             due_counts = df_tasks_pending['due_category'].value_counts().reset_index()
             due_counts.columns = ['category', 'count']
-            
+
             category_order = ["Atrasada", "Vence em 7 dias", "Em Dia", "Sem Prazo"]
             fig_due_date = px.bar(due_counts, x='category', y='count', color='category', text_auto=True,
                                   labels={'category': 'Status do Prazo', 'count': 'Nº de Tarefas'},
@@ -232,7 +274,7 @@ with tab1:
         else:
             gantt_data = [dict(Task=t.get("name"), Start=t.get("created_at"), Finish=t.get("due_date"), Resource=t.get("team")) for t in st.session_state.tasks]
             df_gantt = pd.DataFrame(gantt_data)
-            
+
             if not df_gantt['Start'].isnull().all() and not df_gantt['Finish'].isnull().all():
                 fig_gantt = px.timeline(df_gantt, x_start="Start", x_end="Finish", y="Task", color="Resource", title="Linha do Tempo das Tarefas")
                 fig_gantt.update_yaxes(autorange="reversed")
@@ -242,37 +284,37 @@ with tab1:
 
 # --- ABA 2: GESTÃO DE TAREFAS ---
 with tab2:
-    st.subheader("Adicionar Nova Tarefa")
-    with st.form("task_form", clear_on_submit=True):
-        task_name = st.text_input("Nome da Tarefa", placeholder="Ex: Instalação Elétrica do Bloco A")
-        
-        col1, col2 = st.columns(2)
-        available_teams = [t['name'] for t in st.session_state.config.get("teams", [])]
-        task_team = col1.selectbox("Equipe Responsável", available_teams, index=None, placeholder="Selecione a equipe")
-        available_sectors = [s['name'] for s in st.session_state.config.get("sectors", [])]
-        task_sector = col2.selectbox("Setor da Obra", available_sectors, index=None, placeholder="Selecione o setor")
-        
-        col3, col4 = st.columns(2)
-        task_created_at = col3.date_input("Data de Início", date.today())
-        task_due_date = col4.date_input("Data de Vencimento", date.today() + timedelta(days=7))
+    with st.expander("Adicionar Nova Tarefa", expanded=True):
+        with st.form("task_form", clear_on_submit=True):
+            task_name = st.text_input("Nome da Tarefa", placeholder="Ex: Instalação Elétrica do Bloco A", disabled=not is_admin)
+            
+            col1, col2 = st.columns(2)
+            available_teams = [t['name'] for t in st.session_state.config.get("teams", [])]
+            task_team = col1.selectbox("Equipe Responsável", available_teams, index=None, placeholder="Selecione a equipe", disabled=not is_admin)
+            available_sectors = [s['name'] for s in st.session_state.config.get("sectors", [])]
+            task_sector = col2.selectbox("Setor da Obra", available_sectors, index=None, placeholder="Selecione o setor", disabled=not is_admin)
+            
+            col3, col4 = st.columns(2)
+            task_created_at = col3.date_input("Data de Início", date.today(), disabled=not is_admin)
+            task_due_date = col4.date_input("Data de Vencimento", date.today() + timedelta(days=7), disabled=not is_admin)
 
-        if st.form_submit_button("➕ Adicionar Tarefa", use_container_width=True):
-            if all([task_name, task_team, task_sector]):
-                if task_created_at > task_due_date:
-                    st.error("A data de início não pode ser posterior à data de vencimento.")
+            if st.form_submit_button("➕ Adicionar Tarefa", use_container_width=True, disabled=not is_admin):
+                if all([task_name, task_team, task_sector]):
+                    if task_created_at > task_due_date:
+                        st.error("A data de início não pode ser posterior à data de vencimento.")
+                    else:
+                        new_task = {
+                            "id": str(uuid.uuid4()), "name": task_name, "team": task_team, "sector": task_sector,
+                            "progress": 0, "created_at": task_created_at.strftime("%Y-%m-%d"),
+                            "due_date": task_due_date.strftime("%Y-%m-%d"), "status": "Planejada"
+                        }
+                        st.session_state.tasks.append(new_task)
+                        save_tasks_state()
+                        add_activity("new", "Nova Tarefa Criada", f"'{task_name}' atribuída à {task_team}.")
+                        st.success(f"Tarefa '{task_name}' adicionada!")
+                        st.rerun()
                 else:
-                    new_task = {
-                        "id": str(uuid.uuid4()), "name": task_name, "team": task_team, "sector": task_sector,
-                        "progress": 0, "created_at": task_created_at.strftime("%Y-%m-%d"),
-                        "due_date": task_due_date.strftime("%Y-%m-%d"), "status": "Planejada"
-                    }
-                    st.session_state.tasks.append(new_task)
-                    save_tasks_state()
-                    add_activity("new", "Nova Tarefa Criada", f"'{task_name}' atribuída à {task_team}.")
-                    st.success(f"Tarefa '{task_name}' adicionada!")
-                    st.rerun()
-            else:
-                st.error("Todos os campos são obrigatórios.")
+                    st.error("Todos os campos são obrigatórios.")
 
     st.markdown("---")
     st.subheader("Lista de Tarefas")
@@ -299,11 +341,9 @@ with tab2:
         st.info("Nenhuma tarefa encontrada com os filtros atuais.")
     else:
         for index, task in enumerate(filtered_tasks):
-            expander_key = f"expander_{task['id']}"
             with st.expander(f"**{task.get('name', 'Tarefa sem nome')}** | `{task.get('team', 'Sem equipe')}` | `{task.get('sector', 'Sem setor')}`", expanded=False):
                 original_task = task.copy()
 
-                # === MOSTRAR COLABORADORES DA EQUIPE ===
                 team_name = task.get("team", "")
                 employees = st.session_state.people.get("employees", [])
                 team_members = [e for e in employees if e.get("team") == team_name]
@@ -311,46 +351,28 @@ with tab2:
                 if team_members:
                     st.markdown("##### 👥 Colaboradores da Equipe")
                     df_team = pd.DataFrame(team_members)[["name", "role"]]
-                    st.dataframe(
-                        df_team,
-                        use_container_width=True,
-                        hide_index=True,
-                        key=f"df_team_{task['id']}"
-                    )
+                    st.dataframe(df_team, use_container_width=True, hide_index=True, key=f"df_team_{task['id']}")
                 else:
                     st.info("Nenhum colaborador cadastrado nesta equipe.")
 
-                # === CAMPOS DE EDIÇÃO DA TAREFA ===
                 col1, col2, col3, col4 = st.columns([3, 2, 2, 3])
                 
-                new_name = col1.text_input("Nome", value=task.get('name', ''), key=f"name_{task['id']}")
+                new_name = col1.text_input("Nome", value=task.get('name', ''), key=f"name_{task['id']}", disabled=not is_admin)
                 
                 team_name = task.get('team')
                 current_team_index = available_teams.index(team_name) if team_name in available_teams else None
-                new_team = col2.selectbox(
-                    "Equipe", 
-                    available_teams, 
-                    index=current_team_index, 
-                    placeholder="Selecione uma equipe...",
-                    key=f"team_{task['id']}"
-                )
+                new_team = col2.selectbox("Equipe", available_teams, index=current_team_index, key=f"team_{task['id']}", disabled=not is_admin)
                 
                 sector_name = task.get('sector')
                 current_sector_index = available_sectors.index(sector_name) if sector_name in available_sectors else None
-                new_sector = col3.selectbox(
-                    "Setor", 
-                    available_sectors, 
-                    index=current_sector_index,
-                    placeholder="Selecione um setor...",
-                    key=f"sector_{task['id']}"
-                )
+                new_sector = col3.selectbox("Setor", available_sectors, index=current_sector_index, key=f"sector_{task['id']}", disabled=not is_admin)
                 
                 due_date_val = datetime.strptime(task.get('due_date', str(date.today())), "%Y-%m-%d").date()
-                new_due_date = col4.date_input("Vencimento", value=due_date_val, key=f"due_date_{task['id']}")
+                new_due_date = col4.date_input("Vencimento", value=due_date_val, key=f"due_date_{task['id']}", disabled=not is_admin)
 
-                new_progress = st.slider("Progresso (%)", 0, 100, task.get('progress', 0), key=f"progress_{task['id']}")
+                new_progress = st.slider("Progresso (%)", 0, 100, task.get('progress', 0), key=f"progress_{task['id']}", disabled=not is_admin)
                 
-                if st.button("💾 Salvar", key=f"save_{task['id']}", use_container_width=True):
+                if st.button("💾 Salvar", key=f"save_{task['id']}", use_container_width=True, disabled=not is_admin):
                     task_index = next((i for i, t in enumerate(st.session_state.tasks) if t['id'] == task['id']), None)
                     if task_index is not None:
                         st.session_state.tasks[task_index].update({
@@ -363,7 +385,7 @@ with tab2:
                         st.success(f"Tarefa '{new_name}' atualizada!")
                         st.rerun()
 
-                if st.button("🗑️ Excluir", key=f"delete_{task['id']}", use_container_width=True):
+                if st.button("🗑️ Excluir", key=f"delete_{task['id']}", use_container_width=True, disabled=not is_admin):
                     st.session_state.confirm_delete = task['id']
 
                 if st.session_state.get('confirm_delete') == task['id']:
@@ -382,28 +404,26 @@ with tab2:
                         del st.session_state['confirm_delete']
                         st.rerun()
 
-
-
 # --- ABA 3: GESTÃO DE PESSOAL ---
 with tab3:
-    st.subheader("Cadastrar Novo Funcionário")
-    with st.form("people_form", clear_on_submit=True):
-        emp_name = st.text_input("Nome do Funcionário")
-        
-        available_teams_personnel = [t['name'] for t in st.session_state.config.get("teams", [])]
-        emp_team = st.selectbox("Equipe", available_teams_personnel, index=None, placeholder="Selecione uma equipe")
-        emp_role = st.text_input("Função/Cargo")
+    with st.expander("Cadastrar Novo Funcionário", expanded=True):
+        with st.form("people_form", clear_on_submit=True):
+            emp_name = st.text_input("Nome do Funcionário", disabled=not is_admin)
+            
+            available_teams_personnel = [t['name'] for t in st.session_state.config.get("teams", [])]
+            emp_team = st.selectbox("Equipe", available_teams_personnel, index=None, placeholder="Selecione uma equipe", disabled=not is_admin)
+            emp_role = st.text_input("Função/Cargo", disabled=not is_admin)
 
-        if st.form_submit_button("➕ Adicionar Funcionário", use_container_width=True):
-            if all([emp_name, emp_role, emp_team]):
-                new_employee = {"id": str(uuid.uuid4()), "name": emp_name, "team": emp_team, "role": emp_role}
-                st.session_state.people.setdefault('employees', []).append(new_employee)
-                DataManager.save(PEOPLE_FILE, st.session_state.people)
-                add_activity("user", "Novo Colaborador", f"{emp_name} adicionado à equipe {emp_team}.")
-                st.success(f"Funcionário {emp_name} cadastrado!")
-                st.rerun()
-            else:
-                st.error("Todos os campos são obrigatórios.")
+            if st.form_submit_button("➕ Adicionar Funcionário", use_container_width=True, disabled=not is_admin):
+                if all([emp_name, emp_role, emp_team]):
+                    new_employee = {"id": str(uuid.uuid4()), "name": emp_name, "team": emp_team, "role": emp_role}
+                    st.session_state.people.setdefault('employees', []).append(new_employee)
+                    DataManager.save(PEOPLE_FILE, st.session_state.people)
+                    add_activity("user", "Novo Colaborador", f"{emp_name} adicionado à equipe {emp_team}.")
+                    st.success(f"Funcionário {emp_name} cadastrado!")
+                    st.rerun()
+                else:
+                    st.error("Todos os campos são obrigatórios.")
 
     st.markdown("---")
     st.subheader("Funcionários Cadastrados")
@@ -413,48 +433,54 @@ with tab3:
     else:
         df_people = pd.DataFrame(employees)
         st.dataframe(df_people, use_container_width=True, hide_index=True,
-                     on_select="rerun", selection_mode="single-row", key="employee_selector")
+                     on_select="rerun" if is_admin else None,
+                     selection_mode="single-row" if is_admin else None,
+                     key="employee_selector")
         
-        selection = st.session_state.get("employee_selector", {}).get("selection", {})
-        if selection and selection.get("rows"):
-            selected_index = selection["rows"][0]
-            if selected_index < len(employees):
-                employee = employees[selected_index]
-                
-                st.markdown("#### Editar/Excluir Funcionário Selecionado")
-                with st.form(key=f"edit_employee_{employee.get('id', selected_index)}"):
-                    edited_name = st.text_input("Nome", value=employee['name'])
+        if is_admin:
+            selection = st.session_state.get("employee_selector", {}).get("selection", {})
+            if selection and selection.get("rows"):
+                selected_index = selection["rows"][0]
+                if selected_index < len(employees):
+                    employee = employees[selected_index]
                     
-                    all_teams_edit = [t['name'] for t in st.session_state.config.get("teams", [])]
-                    current_team_index = all_teams_edit.index(employee['team']) if employee['team'] in all_teams_edit else 0
-                    edited_team = st.selectbox("Equipe", options=all_teams_edit, index=current_team_index)
-                    edited_role = st.text_input("Cargo", value=employee['role'])
+                    st.markdown("#### Editar/Excluir Funcionário Selecionado")
+                    with st.form(key=f"edit_employee_{employee.get('id', selected_index)}"):
+                        edited_name = st.text_input("Nome", value=employee['name'])
+                        
+                        all_teams_edit = [t['name'] for t in st.session_state.config.get("teams", [])]
+                        current_team_index = all_teams_edit.index(employee['team']) if employee['team'] in all_teams_edit else 0
+                        edited_team = st.selectbox("Equipe", options=all_teams_edit, index=current_team_index)
+                        edited_role = st.text_input("Cargo", value=employee['role'])
 
-                    col_btn1, col_btn2 = st.columns(2)
-                    if col_btn1.form_submit_button("💾 Salvar Alterações", use_container_width=True):
-                        employees[selected_index] = {'id': employee.get('id'), 'name': edited_name, 'team': edited_team, 'role': edited_role}
-                        DataManager.save(PEOPLE_FILE, st.session_state.people)
-                        add_activity("update", "Dados Atualizados", f"Os dados de '{edited_name}' foram atualizados.")
-                        st.success(f"Dados de '{edited_name}' atualizados!")
-                        st.rerun()
-                    
-                    if col_btn2.form_submit_button("🗑️ Excluir Funcionário", type="primary", use_container_width=True):
-                        deleted_employee = employees.pop(selected_index)
-                        DataManager.save(PEOPLE_FILE, st.session_state.people)
-                        add_activity("delete", "Funcionário Removido", f"O funcionário '{deleted_employee['name']}' foi removido.")
-                        st.warning(f"Funcionário '{deleted_employee['name']}' removido.")
-                        st.rerun()
+                        col_btn1, col_btn2 = st.columns(2)
+                        if col_btn1.form_submit_button("💾 Salvar Alterações", use_container_width=True):
+                            employees[selected_index] = {'id': employee.get('id'), 'name': edited_name, 'team': edited_team, 'role': edited_role}
+                            DataManager.save(PEOPLE_FILE, st.session_state.people)
+                            add_activity("update", "Dados Atualizados", f"Os dados de '{edited_name}' foram atualizados.")
+                            st.success(f"Dados de '{edited_name}' atualizados!")
+                            st.rerun()
+                        
+                        if col_btn2.form_submit_button("🗑️ Excluir Funcionário", type="primary", use_container_width=True):
+                            deleted_employee = employees.pop(selected_index)
+                            DataManager.save(PEOPLE_FILE, st.session_state.people)
+                            add_activity("delete", "Funcionário Removido", f"O funcionário '{deleted_employee['name']}' foi removido.")
+                            st.warning(f"Funcionário '{deleted_employee['name']}' removido.")
+                            st.rerun()
 
 # --- ABA 4: GESTÃO DE CONFIGURAÇÕES ---
 with tab4:
     st.subheader("Gerenciar Setores e Equipes")
+    if not is_admin:
+        st.warning("Apenas administradores podem gerenciar setores e equipes.", icon="🔒")
+    
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("#### Setores da Obra")
         with st.form("form_add_sector", clear_on_submit=True):
-            new_sector_name = st.text_input("Nome do Novo Setor").strip()
-            if st.form_submit_button("➕ Adicionar Setor"):
+            new_sector_name = st.text_input("Nome do Novo Setor", disabled=not is_admin).strip()
+            if st.form_submit_button("➕ Adicionar Setor", disabled=not is_admin):
                 if new_sector_name and not any(s['name'].lower() == new_sector_name.lower() for s in st.session_state.config["sectors"]):
                     st.session_state.config["sectors"].append({"name": new_sector_name, "desc": ""})
                     DataManager.save(CONFIG_FILE, st.session_state.config)
@@ -470,14 +496,13 @@ with tab4:
             with st.expander(f"{sector['name']} ({'Em uso' if is_in_use else 'Não utilizado'})"):
                 with st.form(key=f"edit_sector_{i}"):
                     old_name = sector['name']
-                    new_name = st.text_input("Nome do Setor", value=old_name).strip()
+                    new_name = st.text_input("Nome do Setor", value=old_name, disabled=not is_admin).strip()
                     
                     col_btn1, col_btn2 = st.columns([3, 1])
-                    if col_btn1.form_submit_button("💾 Salvar"):
+                    if col_btn1.form_submit_button("💾 Salvar", disabled=not is_admin):
                         if new_name and not any(s['name'].lower() == new_name.lower() for s in st.session_state.config["sectors"] if s['name'] != old_name):
                             st.session_state.config["sectors"][i]['name'] = new_name
                             DataManager.save(CONFIG_FILE, st.session_state.config)
-                            # Atualiza tarefas associadas
                             for task in st.session_state.tasks:
                                 if task.get('sector') == old_name:
                                     task['sector'] = new_name
@@ -487,7 +512,7 @@ with tab4:
                         else:
                             st.error("Nome inválido ou já existente.")
                     
-                    if col_btn2.form_submit_button("❌", disabled=is_in_use, help="Excluir setor (só se não estiver em uso)"):
+                    if col_btn2.form_submit_button("❌", disabled=not is_admin or is_in_use, help="Excluir setor (só se não estiver em uso)"):
                         st.session_state.config["sectors"].pop(i)
                         DataManager.save(CONFIG_FILE, st.session_state.config)
                         add_activity("delete", "Setor Removido", f"O setor '{old_name}' foi removido.")
@@ -496,8 +521,8 @@ with tab4:
     with col2:
         st.markdown("#### Equipes de Trabalho")
         with st.form("form_add_team", clear_on_submit=True):
-            new_team_name = st.text_input("Nome da Nova Equipe").strip()
-            if st.form_submit_button("➕ Adicionar Equipe"):
+            new_team_name = st.text_input("Nome da Nova Equipe", disabled=not is_admin).strip()
+            if st.form_submit_button("➕ Adicionar Equipe", disabled=not is_admin):
                 if new_team_name and not any(t['name'].lower() == new_team_name.lower() for t in st.session_state.config["teams"]):
                     st.session_state.config["teams"].append({"name": new_team_name})
                     DataManager.save(CONFIG_FILE, st.session_state.config)
@@ -515,14 +540,13 @@ with tab4:
             with st.expander(f"{team['name']} ({'Em uso' if is_in_use else 'Não utilizada'})"):
                 with st.form(key=f"edit_team_{i}"):
                     old_name = team['name']
-                    new_name = st.text_input("Nome da Equipe", value=old_name).strip()
+                    new_name = st.text_input("Nome da Equipe", value=old_name, disabled=not is_admin).strip()
                     
                     col_btn1, col_btn2 = st.columns([3, 1])
-                    if col_btn1.form_submit_button("💾 Salvar"):
+                    if col_btn1.form_submit_button("💾 Salvar", disabled=not is_admin):
                         if new_name and not any(t['name'].lower() == new_name.lower() for t in st.session_state.config["teams"] if t['name'] != old_name):
                             st.session_state.config["teams"][i]['name'] = new_name
                             DataManager.save(CONFIG_FILE, st.session_state.config)
-                            # Atualiza tarefas e funcionários
                             for task in st.session_state.tasks:
                                 if task.get('team') == old_name:
                                     task['team'] = new_name
@@ -536,15 +560,12 @@ with tab4:
                         else:
                             st.error("Nome inválido ou já existente.")
                     
-                    if col_btn2.form_submit_button("❌", disabled=is_in_use, help="Excluir equipe (só se não estiver em uso)"):
+                    if col_btn2.form_submit_button("❌", disabled=not is_admin or is_in_use, help="Excluir equipe (só se não estiver em uso)"):
                         st.session_state.config["teams"].pop(i)
                         DataManager.save(CONFIG_FILE, st.session_state.config)
                         add_activity("delete", "Equipe Removida", f"A equipe '{old_name}' foi removida.")
                         st.rerun()
 
-# =================================================================================
-# --- ABA 5: RELATÓRIOS DETALHADOS ---
-# =================================================================================
 # =================================================================================
 # --- ABA 5: RELATÓRIOS DETALHADOS ---
 # =================================================================================
@@ -558,19 +579,15 @@ with tab5:
         df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'])
         df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'])
 
-        # Filtro por Equipe
         all_teams = ["Todas"] + sorted(df_tasks['team'].unique().tolist())
         selected_team_report = st.selectbox("Filtrar por Equipe:", all_teams, key="report_team_filter")
 
-        # Filtro por Setor
         all_sectors = ["Todos"] + sorted(df_tasks['sector'].unique().tolist())
         selected_sector_report = st.selectbox("Filtrar por Setor:", all_sectors, key="report_sector_filter")
 
-        # Filtro por Status
         all_statuses = ["Todos"] + sorted(df_tasks['status'].unique().tolist())
         selected_status_report = st.selectbox("Filtrar por Status:", all_statuses, key="report_status_filter")
 
-        # Aplicar filtros
         filtered_report_tasks = df_tasks.copy()
         if selected_team_report != "Todas":
             filtered_report_tasks = filtered_report_tasks[filtered_report_tasks['team'] == selected_team_report]
@@ -592,7 +609,6 @@ with tab5:
             st.markdown("---")
             st.markdown("### Detalhes das Tarefas")
 
-            # Exibir cada tarefa em expander com lista de colaboradores
             for _, row in filtered_report_tasks.iterrows():
                 with st.expander(f"📌 {row['name']} | Equipe: {row['team']} | Setor: {row['sector']}"):
                     st.write(f"**Status:** {row['status']} | **Progresso:** {row['progress']}%")
@@ -609,11 +625,9 @@ with tab5:
                     else:
                         st.info("Nenhum colaborador cadastrado para esta equipe.")
 
-            # A INDENTAÇÃO AQUI FOI CORRIGIDA
             st.markdown("---")
             st.markdown("### Gráficos do Relatório")
 
-            # Gráfico de Progresso por Equipe
             st.markdown("##### Progresso Médio por Equipe (Filtrado)")
             progress_by_team_report = filtered_report_tasks.groupby('team')['progress'].mean().reset_index()
             fig_progress_team_report = px.bar(progress_by_team_report, x='team', y='progress',
@@ -621,7 +635,6 @@ with tab5:
                                                labels={'team': 'Equipe', 'progress': 'Progresso Médio (%)'})
             st.plotly_chart(fig_progress_team_report, use_container_width=True)
 
-            # Gráfico de Status por Setor
             st.markdown("##### Distribuição de Status por Setor (Filtrado)")
             status_by_sector_report = filtered_report_tasks.groupby(['sector', 'status']).size().reset_index(name='count')
             fig_status_sector_report = px.bar(status_by_sector_report, x='sector', y='count', color='status',
@@ -630,7 +643,6 @@ with tab5:
                                               color_discrete_map={'Concluída':'#2ca02c', 'Em Andamento':'#ff7f0e', 'Planejada':'#1f77b4'})
             st.plotly_chart(fig_status_sector_report, use_container_width=True)
 
-            # Gráfico de Gantt para as tarefas filtradas
             st.markdown("##### Cronograma das Tarefas Filtradas")
             gantt_data_report = [
                 dict(Task=t.get("name"), Start=t.get("created_at"), Finish=t.get("due_date"), Resource=t.get("team"))
