@@ -670,4 +670,3 @@ with tab5:
                 st.plotly_chart(fig_gantt_report, use_container_width=True)
             else:
                 st.info("Datas de início/fim inválidas ou insuficientes para gerar o cronograma das tarefas filtradas.")
-                
