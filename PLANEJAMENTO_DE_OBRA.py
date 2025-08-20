@@ -69,7 +69,7 @@ def check_authentication():
             col1, col2 = st.columns([1, 1.3])
 
             if col1.form_submit_button("🔑 Entrar como Admin", use_container_width=True):
-                if access_key == st.secrets.get("ACCESS_KEY"):
+                if access_key == st.AAAA.get("ACCESS_KEY"):
                     st.session_state['user_role'] = 'admin'
                     placeholder.empty()
                     st.rerun()
