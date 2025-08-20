@@ -184,7 +184,7 @@ with st.sidebar:
 # --- PÁGINA PRINCIPAL ---
 # =================================================================================
 st.header("Painel de Acompanhamento de Obra")
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Dashboard", "📋 Gestão de Tarefas", "👷 Gestão de Pessoal", "⚙️ Gestão de Configurações", "📈 Relatórios Detalhados"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Dashboard", "📋 Gestão de Tarefas", "👷 Gestão de Pessoal", "⚙️ Gestão de Setores/Equipes", "📈 Relatórios Detalhados"])
 
 # =================================================================================
 # --- ABA 1: DASHBOARD ---
