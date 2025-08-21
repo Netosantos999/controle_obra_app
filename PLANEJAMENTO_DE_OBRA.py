@@ -1,4 +1,4 @@
-# PLANEJAMENTO_DE_OBRA.py (Versão Completa com Controle de Acesso)
+# PLANEJAMENTO_DE_OBRA.py (Versão Completa com PyGWalker)
 import streamlit as st
 import json
 import os
@@ -6,6 +6,7 @@ from datetime import datetime, date, timedelta
 import pandas as pd
 import plotly.express as px
 import uuid
+from pygwalker.api.streamlit import StreamlitRenderer # <- Adicionado
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -184,7 +185,15 @@ with st.sidebar:
 # --- PÁGINA PRINCIPAL ---
 # =================================================================================
 st.header("Painel de Acompanhamento de Obra")
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Dashboard", "📋 Gestão de Tarefas", "👷 Gestão de Pessoal", "⚙️ Gestão de Setores/Equipes", "📈 Relatórios Detalhados"])
+# Aba para PyGWalker adicionada
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📊 Dashboard", 
+    "📋 Gestão de Tarefas", 
+    "👷 Gestão de Pessoal", 
+    "⚙️ Gestão de Configurações", 
+    "📈 Relatórios Detalhados",
+    "🔍 Análise Interativa"
+])
 
 # =================================================================================
 # --- ABA 1: DASHBOARD ---
@@ -433,22 +442,17 @@ with tab3:
     else:
         df_people = pd.DataFrame(employees)
         
-        # --- CÓDIGO CORRIGIDO ---
-        # 1. Define os argumentos base do dataframe
         dataframe_args = {
             "use_container_width": True,
             "hide_index": True,
             "key": "employee_selector"
         }
         
-        # 2. Adiciona os argumentos de seleção apenas se for admin
         if is_admin:
             dataframe_args["on_select"] = "rerun"
             dataframe_args["selection_mode"] = "single-row"
             
-        # 3. Chama o dataframe desempacotando os argumentos
         st.dataframe(df_people, **dataframe_args)
-        # --- FIM DA CORREÇÃO ---
         
         if is_admin:
             selection = st.session_state.get("employee_selector", {}).get("selection", {})
@@ -670,3 +674,33 @@ with tab5:
                 st.plotly_chart(fig_gantt_report, use_container_width=True)
             else:
                 st.info("Datas de início/fim inválidas ou insuficientes para gerar o cronograma das tarefas filtradas.")
+
+# =================================================================================
+# --- ABA 6: ANÁLISE INTERATIVA COM PYGWALKER ---
+# =================================================================================
+with tab6:
+    st.subheader("Análise Interativa com PyGWalker")
+    st.markdown("Arraste e solte os campos para criar seus próprios gráficos e explorar os dados das tarefas de forma dinâmica.")
+
+    if not st.session_state.tasks:
+        st.warning("Nenhuma tarefa cadastrada. Adicione tarefas para poder fazer a análise.")
+    else:
+        # Converte a lista de tarefas para um DataFrame do Pandas
+        df_tasks_analysis = pd.DataFrame(st.session_state.tasks)
+        
+        # Garante que as colunas de data sejam do tipo datetime para melhor análise
+        df_tasks_analysis['created_at'] = pd.to_datetime(df_tasks_analysis['created_at'], errors='coerce')
+        df_tasks_analysis['due_date'] = pd.to_datetime(df_tasks_analysis['due_date'], errors='coerce')
+
+        # Função para obter a instância do PyGWalker em cache para otimizar o desempenho
+        @st.cache_resource
+        def get_pyg_renderer() -> "StreamlitRenderer":
+            # Passa o DataFrame para o PyGWalker.
+            # O arquivo 'spec' salva a configuração do gráfico para que não se perca.
+            # Defina debug=False ao publicar o aplicativo.
+            return StreamlitRenderer(df_tasks_analysis, spec="./gw_config.json", debug=False)
+
+        renderer = get_pyg_renderer()
+        
+        # Renderiza a interface de exploração de dados do PyGWalker
+        renderer.render_explore()
