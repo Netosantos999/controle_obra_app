@@ -1,4 +1,4 @@
-# PLANEJAMENTO_DE_OBRA.py (Versão Completa com Controle de Acesso)
+# PLANEJAMENTO_DE_OBRA.py (Versão Completa com PyGWalker)
 import streamlit as st
 import json
 import os
@@ -6,6 +6,7 @@ from datetime import datetime, date, timedelta
 import pandas as pd
 import plotly.express as px
 import uuid
+from pygwalker.api.streamlit import StreamlitRenderer
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -27,21 +28,25 @@ class DataManager:
     """Classe centralizada para carregar e salvar dados em arquivos JSON."""
     @staticmethod
     def load(file_path, default=None):
+        """Carrega dados de um arquivo JSON. Retorna um valor padrão se o arquivo não existir ou estiver corrompido."""
+        default_value = default if default is not None else {}
         try:
             if os.path.exists(file_path):
                 with open(file_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
-            return default if default is not None else {}
-        return default if default is not None else {}
+            return default_value
+        return default_value
 
     @staticmethod
     def save(file_path, data):
+        """Salva dados em um arquivo JSON."""
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
     @staticmethod
     def backup_tasks():
+        """Cria um backup do arquivo de tarefas com timestamp."""
         os.makedirs(BACKUP_DIR, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
         tasks = st.session_state.get('tasks', [])
@@ -69,6 +74,7 @@ def check_authentication():
             col1, col2 = st.columns([1, 1.3])
 
             if col1.form_submit_button("🔑 Entrar como Admin", use_container_width=True):
+                # Use st.secrets para segurança
                 if access_key == st.secrets.get("ACCESS_KEY"):
                     st.session_state['user_role'] = 'admin'
                     placeholder.empty()
@@ -160,11 +166,11 @@ with st.sidebar:
     else:
         st.warning("Modo de Visualização")
 
-    st.markdown("---")
+    st.divider()
     st.header("Feed de Atividades")
     for activity in st.session_state.activities[:5]:
         st.info(f"**{activity['type']} {activity['title']}**\n\n_{activity['desc']}_\n\n`{activity['time']}`")
-    st.markdown("---")
+    st.divider()
     with st.expander("👥 Equipes e Funcionários", expanded=False):
         employees = st.session_state.people.get('employees', [])
         if not employees:
@@ -184,7 +190,15 @@ with st.sidebar:
 # --- PÁGINA PRINCIPAL ---
 # =================================================================================
 st.header("Painel de Acompanhamento de Obra")
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Dashboard", "📋 Gestão de Tarefas", "👷 Gestão de Pessoal", "⚙️ Gestão de Configurações", "📈 Relatórios Detalhados"])
+# Abas da aplicação
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📊 Dashboard",
+    "📋 Gestão de Tarefas",
+    "👷 Gestão de Pessoal",
+    "⚙️ Gestão de Configurações",
+    "📈 Relatórios Detalhados",
+    "🔍 Análise Interativa"
+])
 
 # =================================================================================
 # --- ABA 1: DASHBOARD ---
@@ -208,7 +222,7 @@ with tab1:
         col2.metric("Total de Tarefas", total_tasks)
         col3.metric("Tarefas Concluídas", completed_tasks)
         col4.metric("Tarefas Pendentes", pending_tasks)
-        st.markdown("<hr>", unsafe_allow_html=True)
+        st.divider()
 
         # --- GRÁFICOS DE DESEMPENHO ---
         st.subheader("Relatórios de Desempenho")
@@ -267,7 +281,7 @@ with tab1:
             fig_due_date.update_layout(xaxis_title=None, showlegend=False)
             st.plotly_chart(fig_due_date, use_container_width=True)
 
-        st.markdown("<hr>", unsafe_allow_html=True)
+        st.divider()
         st.subheader("Cronograma da Obra (Gráfico de Gantt)")
         if not st.session_state.tasks:
             st.info("Nenhuma tarefa para exibir no cronograma.")
@@ -287,13 +301,13 @@ with tab2:
     with st.expander("Adicionar Nova Tarefa", expanded=True):
         with st.form("task_form", clear_on_submit=True):
             task_name = st.text_input("Nome da Tarefa", placeholder="Ex: Instalação Elétrica do Bloco A", disabled=not is_admin)
-            
+
             col1, col2 = st.columns(2)
             available_teams = [t['name'] for t in st.session_state.config.get("teams", [])]
             task_team = col1.selectbox("Equipe Responsável", available_teams, index=None, placeholder="Selecione a equipe", disabled=not is_admin)
             available_sectors = [s['name'] for s in st.session_state.config.get("sectors", [])]
             task_sector = col2.selectbox("Setor da Obra", available_sectors, index=None, placeholder="Selecione o setor", disabled=not is_admin)
-            
+
             col3, col4 = st.columns(2)
             task_created_at = col3.date_input("Data de Início", date.today(), disabled=not is_admin)
             task_due_date = col4.date_input("Data de Vencimento", date.today() + timedelta(days=7), disabled=not is_admin)
@@ -316,7 +330,7 @@ with tab2:
                 else:
                     st.error("Todos os campos são obrigatórios.")
 
-    st.markdown("---")
+    st.divider()
     st.subheader("Lista de Tarefas")
 
     # Filtros e Busca
@@ -356,22 +370,22 @@ with tab2:
                     st.info("Nenhum colaborador cadastrado nesta equipe.")
 
                 col1, col2, col3, col4 = st.columns([3, 2, 2, 3])
-                
+
                 new_name = col1.text_input("Nome", value=task.get('name', ''), key=f"name_{task['id']}", disabled=not is_admin)
-                
+
                 team_name = task.get('team')
                 current_team_index = available_teams.index(team_name) if team_name in available_teams else None
                 new_team = col2.selectbox("Equipe", available_teams, index=current_team_index, key=f"team_{task['id']}", disabled=not is_admin)
-                
+
                 sector_name = task.get('sector')
                 current_sector_index = available_sectors.index(sector_name) if sector_name in available_sectors else None
                 new_sector = col3.selectbox("Setor", available_sectors, index=current_sector_index, key=f"sector_{task['id']}", disabled=not is_admin)
-                
+
                 due_date_val = datetime.strptime(task.get('due_date', str(date.today())), "%Y-%m-%d").date()
                 new_due_date = col4.date_input("Vencimento", value=due_date_val, key=f"due_date_{task['id']}", disabled=not is_admin)
 
                 new_progress = st.slider("Progresso (%)", 0, 100, task.get('progress', 0), key=f"progress_{task['id']}", disabled=not is_admin)
-                
+
                 if st.button("💾 Salvar", key=f"save_{task['id']}", use_container_width=True, disabled=not is_admin):
                     task_index = next((i for i, t in enumerate(st.session_state.tasks) if t['id'] == task['id']), None)
                     if task_index is not None:
@@ -387,6 +401,7 @@ with tab2:
 
                 if st.button("🗑️ Excluir", key=f"delete_{task['id']}", use_container_width=True, disabled=not is_admin):
                     st.session_state.confirm_delete = task['id']
+                    st.rerun()
 
                 if st.session_state.get('confirm_delete') == task['id']:
                     st.warning(f"**Tem certeza que deseja excluir a tarefa '{task.get('name', '')}'?**")
@@ -409,7 +424,7 @@ with tab3:
     with st.expander("Cadastrar Novo Funcionário", expanded=True):
         with st.form("people_form", clear_on_submit=True):
             emp_name = st.text_input("Nome do Funcionário", disabled=not is_admin)
-            
+
             available_teams_personnel = [t['name'] for t in st.session_state.config.get("teams", [])]
             emp_team = st.selectbox("Equipe", available_teams_personnel, index=None, placeholder="Selecione uma equipe", disabled=not is_admin)
             emp_role = st.text_input("Função/Cargo", disabled=not is_admin)
@@ -425,42 +440,37 @@ with tab3:
                 else:
                     st.error("Todos os campos são obrigatórios.")
 
-    st.markdown("---")
+    st.divider()
     st.subheader("Funcionários Cadastrados")
     employees = st.session_state.people.get('employees', [])
     if not employees:
         st.info("Nenhum funcionário cadastrado.")
     else:
         df_people = pd.DataFrame(employees)
-        
-        # --- CÓDIGO CORRIGIDO ---
-        # 1. Define os argumentos base do dataframe
+
         dataframe_args = {
             "use_container_width": True,
             "hide_index": True,
             "key": "employee_selector"
         }
-        
-        # 2. Adiciona os argumentos de seleção apenas se for admin
+
         if is_admin:
             dataframe_args["on_select"] = "rerun"
             dataframe_args["selection_mode"] = "single-row"
-            
-        # 3. Chama o dataframe desempacotando os argumentos
+
         st.dataframe(df_people, **dataframe_args)
-        # --- FIM DA CORREÇÃO ---
-        
+
         if is_admin:
             selection = st.session_state.get("employee_selector", {}).get("selection", {})
             if selection and selection.get("rows"):
                 selected_index = selection["rows"][0]
                 if selected_index < len(employees):
                     employee = employees[selected_index]
-                    
+
                     st.markdown("#### Editar/Excluir Funcionário Selecionado")
                     with st.form(key=f"edit_employee_{employee.get('id', selected_index)}"):
                         edited_name = st.text_input("Nome", value=employee['name'])
-                        
+
                         all_teams_edit = [t['name'] for t in st.session_state.config.get("teams", [])]
                         current_team_index = all_teams_edit.index(employee['team']) if employee['team'] in all_teams_edit else 0
                         edited_team = st.selectbox("Equipe", options=all_teams_edit, index=current_team_index)
@@ -473,7 +483,7 @@ with tab3:
                             add_activity("update", "Dados Atualizados", f"Os dados de '{edited_name}' foram atualizados.")
                             st.success(f"Dados de '{edited_name}' atualizados!")
                             st.rerun()
-                        
+
                         if col_btn2.form_submit_button("🗑️ Excluir Funcionário", type="primary", use_container_width=True):
                             deleted_employee = employees.pop(selected_index)
                             DataManager.save(PEOPLE_FILE, st.session_state.people)
@@ -486,9 +496,9 @@ with tab4:
     st.subheader("Gerenciar Setores e Equipes")
     if not is_admin:
         st.warning("Apenas administradores podem gerenciar setores e equipes.", icon="🔒")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown("#### Setores da Obra")
         with st.form("form_add_sector", clear_on_submit=True):
@@ -510,7 +520,7 @@ with tab4:
                 with st.form(key=f"edit_sector_{i}"):
                     old_name = sector['name']
                     new_name = st.text_input("Nome do Setor", value=old_name, disabled=not is_admin).strip()
-                    
+
                     col_btn1, col_btn2 = st.columns([3, 1])
                     if col_btn1.form_submit_button("💾 Salvar", disabled=not is_admin):
                         if new_name and not any(s['name'].lower() == new_name.lower() for s in st.session_state.config["sectors"] if s['name'] != old_name):
@@ -524,11 +534,11 @@ with tab4:
                             st.rerun()
                         else:
                             st.error("Nome inválido ou já existente.")
-                    
+
                     if col_btn2.form_submit_button("❌", disabled=not is_admin or is_in_use, help="Excluir setor (só se não estiver em uso)"):
-                        st.session_state.config["sectors"].pop(i)
+                        deleted_sector_name = st.session_state.config["sectors"].pop(i)['name']
                         DataManager.save(CONFIG_FILE, st.session_state.config)
-                        add_activity("delete", "Setor Removido", f"O setor '{old_name}' foi removido.")
+                        add_activity("delete", "Setor Removido", f"O setor '{deleted_sector_name}' foi removido.")
                         st.rerun()
 
     with col2:
@@ -549,17 +559,18 @@ with tab4:
         for i, team in enumerate(st.session_state.config["teams"]):
             is_in_use = any(task.get('team') == team['name'] for task in st.session_state.tasks) or \
                         any(emp.get('team') == team['name'] for emp in st.session_state.people.get('employees', []))
-            
+
             with st.expander(f"{team['name']} ({'Em uso' if is_in_use else 'Não utilizada'})"):
                 with st.form(key=f"edit_team_{i}"):
                     old_name = team['name']
                     new_name = st.text_input("Nome da Equipe", value=old_name, disabled=not is_admin).strip()
-                    
+
                     col_btn1, col_btn2 = st.columns([3, 1])
                     if col_btn1.form_submit_button("💾 Salvar", disabled=not is_admin):
                         if new_name and not any(t['name'].lower() == new_name.lower() for t in st.session_state.config["teams"] if t['name'] != old_name):
                             st.session_state.config["teams"][i]['name'] = new_name
                             DataManager.save(CONFIG_FILE, st.session_state.config)
+                            # Atualiza em cascata
                             for task in st.session_state.tasks:
                                 if task.get('team') == old_name:
                                     task['team'] = new_name
@@ -568,15 +579,15 @@ with tab4:
                                 if emp.get('team') == old_name:
                                     emp['team'] = new_name
                             DataManager.save(PEOPLE_FILE, st.session_state.people)
-                            add_activity("update", "Equipe Atualizada", f"Equipe '{old_name}' atualizado para '{new_name}'.")
+                            add_activity("update", "Equipe Atualizada", f"Equipe '{old_name}' atualizada para '{new_name}'.")
                             st.rerun()
                         else:
                             st.error("Nome inválido ou já existente.")
-                    
+
                     if col_btn2.form_submit_button("❌", disabled=not is_admin or is_in_use, help="Excluir equipe (só se não estiver em uso)"):
-                        st.session_state.config["teams"].pop(i)
+                        deleted_team_name = st.session_state.config["teams"].pop(i)['name']
                         DataManager.save(CONFIG_FILE, st.session_state.config)
-                        add_activity("delete", "Equipe Removida", f"A equipe '{old_name}' foi removida.")
+                        add_activity("delete", "Equipe Removida", f"A equipe '{deleted_team_name}' foi removida.")
                         st.rerun()
 
 # =================================================================================
@@ -612,14 +623,14 @@ with tab5:
         if filtered_report_tasks.empty:
             st.warning("Nenhuma tarefa encontrada com os filtros selecionados.")
         else:
-            st.markdown("---")
+            st.divider()
             st.markdown("### Visão Geral das Tarefas Filtradas")
             col_metrics_report1, col_metrics_report2, col_metrics_report3 = st.columns(3)
             col_metrics_report1.metric("Total de Tarefas", len(filtered_report_tasks))
             col_metrics_report2.metric("Tarefas Concluídas", len(filtered_report_tasks[filtered_report_tasks['status'] == 'Concluída']))
             col_metrics_report3.metric("Progresso Médio", f"{filtered_report_tasks['progress'].mean():.1f}%")
 
-            st.markdown("---")
+            st.divider()
             st.markdown("### Detalhes das Tarefas")
 
             for _, row in filtered_report_tasks.iterrows():
@@ -638,7 +649,7 @@ with tab5:
                     else:
                         st.info("Nenhum colaborador cadastrado para esta equipe.")
 
-            st.markdown("---")
+            st.divider()
             st.markdown("### Gráficos do Relatório")
 
             st.markdown("##### Progresso Médio por Equipe (Filtrado)")
@@ -670,3 +681,33 @@ with tab5:
                 st.plotly_chart(fig_gantt_report, use_container_width=True)
             else:
                 st.info("Datas de início/fim inválidas ou insuficientes para gerar o cronograma das tarefas filtradas.")
+
+# =================================================================================
+# --- ABA 6: ANÁLISE INTERATIVA COM PYGWALKER ---
+# =================================================================================
+with tab6:
+    st.subheader("Análise Interativa com PyGWalker")
+    st.markdown("Arraste e solte os campos para criar seus próprios gráficos e explorar os dados das tarefas de forma dinâmica.")
+
+    if not st.session_state.tasks:
+        st.warning("Nenhuma tarefa cadastrada. Adicione tarefas para poder fazer a análise.")
+    else:
+        # Converte a lista de tarefas para um DataFrame do Pandas
+        df_tasks_analysis = pd.DataFrame(st.session_state.tasks)
+
+        # Garante que as colunas de data sejam do tipo datetime para melhor análise
+        df_tasks_analysis['created_at'] = pd.to_datetime(df_tasks_analysis['created_at'], errors='coerce')
+        df_tasks_analysis['due_date'] = pd.to_datetime(df_tasks_analysis['due_date'], errors='coerce')
+
+        # Função para obter a instância do PyGWalker em cache para otimizar o desempenho
+        @st.cache_resource
+        def get_pyg_renderer() -> "StreamlitRenderer":
+            # Passa o DataFrame para o PyGWalker.
+            # O arquivo 'spec' salva a configuração do gráfico para que não se perca.
+            # Defina debug=False ao publicar o aplicativo.
+            return StreamlitRenderer(df_tasks_analysis, spec="./gw_config.json", debug=False)
+
+        renderer = get_pyg_renderer()
+
+        # Renderiza a interface de exploração de dados do PyGWalker
+        renderer.render_explore()
