@@ -128,7 +128,7 @@ def get_team_members_info(team_name):
 def initialize_state():
     """Carrega todos os dados para o estado da sessão na inicialização."""
     if 'initialized' not in st.session_state:
-        st.session_state.config = DataManager.load(CONFIG_FILE, {"sectors": [], "teams": []})
+        st.session_state.config = DataManager.load(CONFIG_FILE, {"sectors": [], "teams": [], "project_goals": ""})
         st.session_state.people = DataManager.load(PEOPLE_FILE, {"employees": []})
         st.session_state.tasks = DataManager.load(TASKS_FILE, [])
         st.session_state.activities = DataManager.load(ACTIVITIES_FILE, [])
@@ -167,6 +167,26 @@ with st.sidebar:
         st.warning("Modo de Visualização")
 
     st.divider()
+
+    with st.expander("🎯 Metas das tarefas", expanded=True):
+        if is_admin:
+            goals = st.text_area(
+                "Descreva as metas principais do projeto:",
+                value=st.session_state.config.get("project_goals", ""),
+                height=150,
+                key="project_goals_text",
+                help="Defina os objetivos gerais que guiarão todas as atividades da obra."
+            )
+            if st.button("Salvar Metas", use_container_width=True):
+                st.session_state.config["project_goals"] = goals
+                DataManager.save(CONFIG_FILE, st.session_state.config)
+                add_activity("config", "Metas Atualizadas", "As metas gerais da obra foram definidas/atualizadas.")
+                st.toast("Metas salvas com sucesso!")
+                st.rerun()
+        else:
+            goals = st.session_state.config.get("project_goals", "Nenhuma meta definida.")
+            st.markdown(goals if goals else "Nenhuma meta definida.")
+
     st.header("Feed de Atividades")
     for activity in st.session_state.activities[:5]:
         st.info(f"**{activity['type']} {activity['title']}**\n\n_{activity['desc']}_\n\n`{activity['time']}`")
