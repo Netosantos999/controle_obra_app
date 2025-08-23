@@ -168,7 +168,7 @@ with st.sidebar:
 
     st.divider()
 
-    with st.expander("🎯 Metas das tarefas", expanded=True):
+    with st.expander("🎯 Metas da Obra", expanded=True):
         if is_admin:
             goals = st.text_area(
                 "Descreva as metas principais do projeto:",
@@ -229,6 +229,7 @@ with tab1:
         st.warning("Nenhuma tarefa cadastrada. Adicione tarefas para visualizar os relatórios.")
     else:
         df_tasks = pd.DataFrame(st.session_state.tasks)
+        df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
         df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'], errors='coerce')
 
         # --- MÉTRICAS PRINCIPAIS ---
@@ -389,7 +390,7 @@ with tab2:
                 else:
                     st.info("Nenhum colaborador cadastrado nesta equipe.")
 
-                col1, col2, col3, col4 = st.columns([3, 2, 2, 3])
+                col1, col2, col3 = st.columns(3)
 
                 new_name = col1.text_input("Nome", value=task.get('name', ''), key=f"name_{task['id']}", disabled=not is_admin)
 
@@ -401,23 +402,31 @@ with tab2:
                 current_sector_index = available_sectors.index(sector_name) if sector_name in available_sectors else None
                 new_sector = col3.selectbox("Setor", available_sectors, index=current_sector_index, key=f"sector_{task['id']}", disabled=not is_admin)
 
+                col_date1, col_date2 = st.columns(2)
+                start_date_val = datetime.strptime(task.get('created_at', str(date.today())), "%Y-%m-%d").date()
+                new_start_date = col_date1.date_input("Início", value=start_date_val, key=f"start_date_{task['id']}", disabled=not is_admin)
+
                 due_date_val = datetime.strptime(task.get('due_date', str(date.today())), "%Y-%m-%d").date()
-                new_due_date = col4.date_input("Vencimento", value=due_date_val, key=f"due_date_{task['id']}", disabled=not is_admin)
+                new_due_date = col_date2.date_input("Vencimento", value=due_date_val, key=f"due_date_{task['id']}", disabled=not is_admin)
 
                 new_progress = st.slider("Progresso (%)", 0, 100, task.get('progress', 0), key=f"progress_{task['id']}", disabled=not is_admin)
 
                 if st.button("💾 Salvar", key=f"save_{task['id']}", use_container_width=True, disabled=not is_admin):
-                    task_index = next((i for i, t in enumerate(st.session_state.tasks) if t['id'] == task['id']), None)
-                    if task_index is not None:
-                        st.session_state.tasks[task_index].update({
-                            'name': new_name, 'team': new_team, 'sector': new_sector,
-                            'due_date': new_due_date.strftime("%Y-%m-%d"), 'progress': new_progress,
-                            'status': get_task_status({'progress': new_progress})
-                        })
-                        save_tasks_state()
-                        add_activity("update", "Tarefa Atualizada", f"A tarefa '{original_task.get('name', '')}' foi atualizada.")
-                        st.success(f"Tarefa '{new_name}' atualizada!")
-                        st.rerun()
+                    if new_start_date > new_due_date:
+                        st.error("A data de início não pode ser posterior à data de vencimento.", icon="🚨")
+                    else:
+                        task_index = next((i for i, t in enumerate(st.session_state.tasks) if t['id'] == task['id']), None)
+                        if task_index is not None:
+                            st.session_state.tasks[task_index].update({
+                                'name': new_name, 'team': new_team, 'sector': new_sector,
+                                'created_at': new_start_date.strftime("%Y-%m-%d"),
+                                'due_date': new_due_date.strftime("%Y-%m-%d"), 'progress': new_progress,
+                                'status': get_task_status({'progress': new_progress})
+                            })
+                            save_tasks_state()
+                            add_activity("update", "Tarefa Atualizada", f"A tarefa '{original_task.get('name', '')}' foi atualizada.")
+                            st.success(f"Tarefa '{new_name}' atualizada!")
+                            st.rerun()
 
                 if st.button("🗑️ Excluir", key=f"delete_{task['id']}", use_container_width=True, disabled=not is_admin):
                     st.session_state.confirm_delete = task['id']
