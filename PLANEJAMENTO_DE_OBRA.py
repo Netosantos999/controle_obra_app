@@ -103,7 +103,7 @@ def get_due_category(due_date, today=pd.to_datetime(date.today())):
         return "Vence em 7 dias"
     return "Em Dia"
 
-def generate_report_html(filtered_df, project_goals, filters):
+def generate_report_html(filtered_df, personnel_df, project_goals, filters):
     """Gera um relatório HTML completo e estilizado a partir dos dados filtrados."""
     
     # --- Métricas ---
@@ -147,6 +147,38 @@ def generate_report_html(filtered_df, project_goals, filters):
     df_display['Vencimento'] = df_display['Vencimento'].dt.strftime('%d/%m/%Y')
     tasks_table_html = df_display.to_html(index=False, border=0, classes='dataframe')
 
+    # --- Dados de Pessoal (convertidos para HTML) ---
+    total_employees = len(personnel_df)
+    employees_by_team_html = ""
+    if not personnel_df.empty:
+        employees_by_team = personnel_df['team'].value_counts().reset_index()
+        employees_by_team.columns = ['Equipe', 'Nº de Colaboradores']
+        employees_by_team_html = employees_by_team.to_html(index=False, border=0, classes='dataframe')
+
+    all_employees_table_html = ""
+    if not personnel_df.empty:
+        df_people_display = personnel_df[['name', 'team', 'role']].copy().sort_values(by=['team', 'name'])
+        df_people_display.rename(columns={'name': 'Nome', 'team': 'Equipe', 'role': 'Função'}, inplace=True)
+        
+        # --- Mapeamento de cores para equipes ---
+        color_palette = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+        unique_teams = df_people_display['Equipe'].unique()
+        team_color_map = {team: color_palette[i % len(color_palette)] for i, team in enumerate(unique_teams)}
+
+        # --- Geração manual da tabela HTML com cores ---
+        table_header = "<thead><tr><th>Nome</th><th>Equipe</th><th>Função</th></tr></thead>"
+        table_body = "<tbody>"
+        for _, row in df_people_display.iterrows():
+            team_color = team_color_map.get(row['Equipe'], '#cccccc') # Cor padrão
+            table_body += f'<tr style="border-left: 5px solid {team_color};">'
+            table_body += f"<td>{row['Nome']}</td>"
+            table_body += f"<td>{row['Equipe']}</td>"
+            table_body += f"<td>{row['Função']}</td>"
+            table_body += "</tr>"
+        table_body += "</tbody>"
+        all_employees_table_html = f'<table class="dataframe">{table_header}{table_body}</table>'
+
+
     # --- Template HTML ---
     html_template = f"""
     <!DOCTYPE html>
@@ -171,7 +203,7 @@ def generate_report_html(filtered_df, project_goals, filters):
             .dataframe th, .dataframe td {{ padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }}
             .dataframe th {{ background-color: #f2f2f2; font-weight: bold; }}
             .dataframe tbody tr:hover {{ background-color: #f5f5f5; }}
-            .charts-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
+            .charts-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;}}
             .chart {{ border: 1px solid #ddd; padding: 10px; border-radius: 8px; }}
             .goals {{ background-color: #e7f3ff; border-left: 4px solid #1f77b4; padding: 15px; margin-bottom: 20px; white-space: pre-wrap; }}
             @media print {{
@@ -208,7 +240,24 @@ def generate_report_html(filtered_df, project_goals, filters):
             </div>
 
             <div class="section">
-                <h2>3. Detalhamento das Atividades</h2>
+                <h2>3. Detalhamento de Pessoal</h2>
+                <div class="charts-grid">
+                    <div class="chart">
+                        <h3 style="text-align: center; margin-top: 5px;">Colaboradores por Equipe</h3>
+                        {employees_by_team_html}
+                    </div>
+                    <div class="metric" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
+                        <div class="value">{total_employees}</div>
+                        <div class="label">Total de Colaboradores</div>
+                    </div>
+                </div>
+                <br>
+                <h3>Lista Geral de Funcionários</h3>
+                {all_employees_table_html}
+            </div>
+
+            <div class="section">
+                <h2>4. Detalhamento das Atividades</h2>
                 {tasks_table_html}
             </div>
         </div>
@@ -801,7 +850,8 @@ with tab5:
             else:
                 filters = {"team": selected_team, "sector": selected_sector, "status": selected_status}
                 project_goals = st.session_state.config.get("project_goals", "")
-                st.session_state.report_html = generate_report_html(filtered_report_tasks, project_goals, filters)
+                df_people = pd.DataFrame(st.session_state.people.get('employees', []))
+                st.session_state.report_html = generate_report_html(filtered_report_tasks, df_people, project_goals, filters)
 
     # --- EXIBIÇÃO DO RELATÓRIO ---
     if st.session_state.report_html:
