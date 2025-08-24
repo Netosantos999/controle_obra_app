@@ -1,12 +1,12 @@
-# PLANEJAMENTO_DE_OBRA.py (Versão Completa com PyGWalker)
+# PLANEJAMENTO_DE_OBRA.py (Versão Otimizada)
 import streamlit as st
 import json
 import os
 from datetime import datetime, date, timedelta
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import uuid
-from pygwalker.api.streamlit import StreamlitRenderer
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -74,7 +74,6 @@ def check_authentication():
             col1, col2 = st.columns([1, 1.3])
 
             if col1.form_submit_button("🔑 Entrar como Admin", use_container_width=True):
-                # Use st.secrets para segurança
                 if access_key == st.secrets.get("ACCESS_KEY"):
                     st.session_state['user_role'] = 'admin'
                     placeholder.empty()
@@ -86,12 +85,138 @@ def check_authentication():
                 st.session_state['user_role'] = 'viewer'
                 placeholder.empty()
                 st.rerun()
-        return False # Bloqueia a execução do resto do app
+        return False
 
-    return True # Permite a execução do resto do app
+    return True
 
 
 # --- FUNÇÕES DE LÓGICA DE NEGÓCIO E UI ---
+
+def get_due_category(due_date, today=pd.to_datetime(date.today())):
+    """Classifica uma tarefa pendente com base na sua data de vencimento."""
+    if pd.isna(due_date):
+        return "Sem Prazo"
+    delta = (due_date - today).days
+    if delta < 0:
+        return "Atrasada"
+    if delta <= 7:
+        return "Vence em 7 dias"
+    return "Em Dia"
+
+def generate_report_html(filtered_df, project_goals, filters):
+    """Gera um relatório HTML completo e estilizado a partir dos dados filtrados."""
+    
+    # --- Métricas ---
+    total_tasks = len(filtered_df)
+    completed_tasks = len(filtered_df[filtered_df['status'] == 'Concluída'])
+    progress = filtered_df['progress'].mean() if total_tasks > 0 else 0
+    overdue_tasks = len(filtered_df[(filtered_df['due_date'] < pd.to_datetime(datetime.now())) & (filtered_df['status'] != 'Concluída')])
+    completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+
+    # --- Gráficos (convertidos para HTML) ---
+    # Gráfico de Status
+    status_counts = filtered_df['status'].value_counts().reset_index()
+    status_counts.columns = ['status', 'count']
+    fig_status = px.pie(status_counts, names='status', values='count', hole=.4,
+                        title="Distribuição por Status",
+                        color='status', color_discrete_map={'Concluída':'#2ca02c', 'Em Andamento':'#ff7f0e', 'Planejada':'#1f77b4'})
+    fig_status.update_layout(legend_title_text='Status', margin=dict(t=40, b=20, l=20, r=20))
+    status_chart_html = fig_status.to_html(full_html=False, include_plotlyjs='cdn')
+
+    # Gráfico de Prazos
+    today = pd.to_datetime(date.today())
+    df_pending = filtered_df[filtered_df['status'] != 'Concluída'].copy()
+    due_chart_html = ""
+    if not df_pending.empty:
+        df_pending['due_category'] = df_pending['due_date'].apply(get_due_category)
+        due_counts = df_pending['due_category'].value_counts().reset_index()
+        due_counts.columns = ['category', 'count']
+        category_order = ["Atrasada", "Vence em 7 dias", "Em Dia", "Sem Prazo"]
+        fig_due = px.bar(due_counts, x='category', y='count', color='category', text_auto=True,
+                         title="Análise de Prazos (Tarefas Pendentes)",
+                         labels={'category': 'Status do Prazo', 'count': 'Nº de Tarefas'},
+                         color_discrete_map={'Atrasada': '#d62728', 'Vence em 7 dias': '#ff7f0e', 'Em Dia': '#2ca02c', 'Sem Prazo': '#7f7f7f'},
+                         category_orders={"category": category_order})
+        fig_due.update_layout(xaxis_title=None, yaxis_title="Nº de Tarefas", showlegend=False)
+        due_chart_html = fig_due.to_html(full_html=False, include_plotlyjs='cdn')
+
+    # --- Tabela de Tarefas (convertida para HTML) ---
+    df_display = filtered_df[['name', 'team', 'sector', 'status', 'progress', 'created_at', 'due_date']].copy()
+    df_display.rename(columns={'name': 'Tarefa', 'team': 'Equipe', 'sector': 'Setor', 'status': 'Status', 'progress': 'Progresso (%)', 'created_at': 'Início', 'due_date': 'Vencimento'}, inplace=True)
+    df_display['Início'] = df_display['Início'].dt.strftime('%d/%m/%Y')
+    df_display['Vencimento'] = df_display['Vencimento'].dt.strftime('%d/%m/%Y')
+    tasks_table_html = df_display.to_html(index=False, border=0, classes='dataframe')
+
+    # --- Template HTML ---
+    html_template = f"""
+    <!DOCTYPE html>
+    <html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Relatório de Andamento da Obra</title>
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0; }}
+            .container {{ max-width: 1100px; margin: 20px auto; padding: 20px; background-color: #fff; border: 1px solid #ddd; box-shadow: 0 0 10px rgba(0,0,0,0.05); }}
+            header {{ text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }}
+            header h1 {{ margin: 0; color: #1f77b4; }}
+            header p {{ margin: 5px 0 0; color: #777; }}
+            .section {{ margin-bottom: 40px; }}
+            .section h2 {{ color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }}
+            .metrics-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center; }}
+            .metric {{ background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; }}
+            .metric .value {{ font-size: 2.5em; font-weight: bold; color: #1f77b4; }}
+            .metric .label {{ font-size: 1em; color: #666; margin-top: 5px; }}
+            .dataframe {{ width: 100%; border-collapse: collapse; }}
+            .dataframe th, .dataframe td {{ padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }}
+            .dataframe th {{ background-color: #f2f2f2; font-weight: bold; }}
+            .dataframe tbody tr:hover {{ background-color: #f5f5f5; }}
+            .charts-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
+            .chart {{ border: 1px solid #ddd; padding: 10px; border-radius: 8px; }}
+            .goals {{ background-color: #e7f3ff; border-left: 4px solid #1f77b4; padding: 15px; margin-bottom: 20px; white-space: pre-wrap; }}
+            @media print {{
+                body {{ background-color: #fff; }}
+                .container {{ box-shadow: none; border: none; margin: 0; max-width: 100%; }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Relatório de Andamento da Obra</h1>
+                <p><strong>Data de Emissão:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                <p><strong>Filtros:</strong> Equipe: {filters['team']}, Setor: {filters['sector']}, Status: {filters['status']}</p>
+            </header>
+
+            <div class="section">
+                <h2>1. Resumo Executivo e Metas</h2>
+                <div class="goals"><strong>Metas do Projeto:</strong><br>{project_goals if project_goals else "Nenhuma meta definida."}</div>
+                <div class="metrics-grid">
+                    <div class="metric"><div class="value">{total_tasks}</div><div class="label">Total de Tarefas</div></div>
+                    <div class="metric"><div class="value">{progress:.1f}%</div><div class="label">Progresso Médio</div></div>
+                    <div class="metric"><div class="value">{completion_rate:.1f}%</div><div class="label">Taxa de Conclusão</div></div>
+                    <div class="metric"><div class="value" style="color: #d62728;">{overdue_tasks}</div><div class="label">Tarefas Atrasadas</div></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>2. Análise Gráfica</h2>
+                <div class="charts-grid">
+                    <div class="chart">{status_chart_html}</div>
+                    <div class="chart">{due_chart_html if due_chart_html else "<p>Nenhuma tarefa pendente para análise.</p>"}</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>3. Detalhamento das Atividades</h2>
+                {tasks_table_html}
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_template
+
 def get_task_status(task):
     """Retorna o status de uma tarefa com base no seu progresso."""
     progress = task.get('progress', 0)
@@ -117,34 +242,34 @@ def save_tasks_state():
     DataManager.save(TASKS_FILE, st.session_state.tasks)
     DataManager.backup_tasks()
 
-def get_team_members_info(team_name):
-    """Retorna uma string formatada com nomes e funções dos membros de uma equipe."""
-    employees = st.session_state.people.get("employees", [])
-    team_members = [e for e in employees if e.get("team") == team_name]
-    if team_members:
-        return ", ".join([f"{m['name']} ({m['role']})" for m in team_members])
-    return "Nenhum colaborador"
-
 def initialize_state():
     """Carrega todos os dados para o estado da sessão na inicialização."""
     if 'initialized' not in st.session_state:
         st.session_state.config = DataManager.load(CONFIG_FILE, {"sectors": [], "teams": [], "project_goals": ""})
         st.session_state.people = DataManager.load(PEOPLE_FILE, {"employees": []})
-        st.session_state.tasks = DataManager.load(TASKS_FILE, [])
+        tasks_data = DataManager.load(TASKS_FILE, [])
         st.session_state.activities = DataManager.load(ACTIVITIES_FILE, [])
 
-        # Normaliza nomes de equipes e setores para remover espaços extras
+        # Pré-processamento e sanitização dos dados
         for team in st.session_state.config.get("teams", []):
             team['name'] = team['name'].strip()
         for sector in st.session_state.config.get("sectors", []):
             sector['name'] = sector['name'].strip()
 
-        # Garante que cada tarefa tenha um ID único e status atualizado
-        for task in st.session_state.tasks:
+        for task in tasks_data:
             if 'id' not in task:
                 task['id'] = str(uuid.uuid4())
             task['status'] = get_task_status(task)
-
+        
+        # Converte os dados de tarefas em um DataFrame do Pandas
+        df_tasks = pd.DataFrame(tasks_data)
+        if not df_tasks.empty:
+            # Converte colunas de data para datetime, tratando erros
+            df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
+            df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'], errors='coerce')
+        
+        st.session_state.tasks_df = df_tasks
+        st.session_state.tasks = tasks_data # Mantém a lista original para salvar em JSON
         st.session_state.initialized = True
 
 
@@ -211,13 +336,12 @@ with st.sidebar:
 # =================================================================================
 st.header("Painel de Acompanhamento de Obra")
 # Abas da aplicação
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Dashboard",
     "📋 Gestão de Tarefas",
     "👷 Gestão de Pessoal",
     "⚙️ Gestão de Configurações",
-    "📈 Relatórios Detalhados",
-    "🔍 Análise Interativa"
+    "📈 Relatórios Detalhados"
 ])
 
 # =================================================================================
@@ -225,13 +349,11 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 # =================================================================================
 with tab1:
     st.subheader("Visão Geral do Projeto")
-    if not st.session_state.tasks:
+    if st.session_state.tasks_df.empty:
         st.warning("Nenhuma tarefa cadastrada. Adicione tarefas para visualizar os relatórios.")
     else:
-        df_tasks = pd.DataFrame(st.session_state.tasks)
-        df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
-        df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'], errors='coerce')
-
+        df_tasks = st.session_state.tasks_df
+        
         # --- MÉTRICAS PRINCIPAIS ---
         total_tasks = len(df_tasks)
         completed_tasks = len(df_tasks[df_tasks['status'] == 'Concluída'])
@@ -246,76 +368,90 @@ with tab1:
         st.divider()
 
         # --- GRÁFICOS DE DESEMPENHO ---
-        st.subheader("Relatórios de Desempenho")
+        st.subheader("Indicadores de Desempenho")
         col_chart1, col_chart2 = st.columns(2)
 
         with col_chart1:
-            st.markdown("##### **Distribuição por Status**")
+            st.markdown("##### **Status das Tarefas**", help="Distribuição percentual das tarefas por status.")
             status_counts = df_tasks['status'].value_counts().reset_index()
             status_counts.columns = ['status', 'count']
             fig_status = px.pie(status_counts, names='status', values='count', hole=.4,
+                                title="Distribuição por Status",
                                 color='status', color_discrete_map={'Concluída':'#2ca02c', 'Em Andamento':'#ff7f0e', 'Planejada':'#1f77b4'})
-            fig_status.update_traces(textinfo='percent+label+value', textfont_size=14, pull=[0.05, 0, 0])
-            fig_status.update_layout(showlegend=False, margin=dict(t=20, b=20, l=20, r=20))
+            fig_status.update_traces(textinfo='percent+value', textfont_size=14, pull=[0.05, 0, 0])
+            fig_status.update_layout(legend_title_text='Status', margin=dict(t=40, b=20, l=20, r=20))
             st.plotly_chart(fig_status, use_container_width=True)
 
         with col_chart2:
-            st.markdown("##### **Progresso Médio por Setor**")
-            progress_by_sector = df_tasks.groupby('sector')['progress'].mean().sort_values(ascending=True).reset_index()
-            fig_sector = px.bar(progress_by_sector, x='progress', y='sector', orientation='h', text='progress')
+            st.markdown("##### **Progresso por Setor**", help="Média de conclusão das tarefas em cada setor da obra.")
+            progress_by_sector = df_tasks.groupby('sector')['progress'].mean().sort_values(ascending=False).reset_index()
+            fig_sector = px.bar(progress_by_sector, x='sector', y='progress', text='progress',
+                                title="Progresso Médio por Setor",
+                                color='progress', color_continuous_scale=px.colors.sequential.Greens)
             fig_sector.update_traces(texttemplate='%{text:.2s}%', textposition='outside')
-            fig_sector.update_layout(yaxis_title=None, xaxis_title="Progresso Médio", margin=dict(t=20, b=20, l=20, r=20))
+            fig_sector.update_layout(xaxis_title="Setor", yaxis_title="Progresso Médio (%)", coloraxis_showscale=False)
             st.plotly_chart(fig_sector, use_container_width=True)
 
         col_chart3, col_chart4 = st.columns(2)
         with col_chart3:
-            st.markdown("##### **Carga de Trabalho por Equipe**")
+            st.markdown("##### **Carga de Trabalho por Equipe**", help="Número de tarefas (concluídas, em andamento, planejadas) por equipe.")
             tasks_by_team_status = df_tasks.groupby(['team', 'status']).size().reset_index(name='count')
             fig_teams = px.bar(tasks_by_team_status, x='team', y='count', color='status',
-                               labels={'team': 'Equipe', 'count': 'Nº de Tarefas'},
+                               title="Tarefas por Equipe e Status",
+                               labels={'team': 'Equipe', 'count': 'Nº de Tarefas', 'status': 'Status'},
                                color_discrete_map={'Concluída':'#2ca02c', 'Em Andamento':'#ff7f0e', 'Planejada':'#1f77b4'},
                                text_auto=True)
-            fig_teams.update_layout(xaxis={'categoryorder':'total descending'}, yaxis_title="Nº de Tarefas")
+            fig_teams.update_layout(xaxis={'categoryorder':'total descending'}, yaxis_title="Nº de Tarefas", xaxis_title=None)
             st.plotly_chart(fig_teams, use_container_width=True)
 
         with col_chart4:
-            st.markdown("##### **Análise de Prazos das Tarefas**")
+            st.markdown("##### **Situação dos Prazos**", help="Classificação de tarefas pendentes por prazo de vencimento.")
             today = pd.to_datetime(date.today())
             df_tasks_pending = df_tasks[df_tasks['status'] != 'Concluída'].copy()
 
-            def get_due_category(due_date):
-                if pd.isna(due_date): return "Sem Prazo"
-                delta = (due_date - today).days
-                if delta < 0: return "Atrasada"
-                if delta <= 7: return "Vence em 7 dias"
-                return "Em Dia"
+            if not df_tasks_pending.empty:
+                df_tasks_pending['due_category'] = df_tasks_pending['due_date'].apply(get_due_category)
+                due_counts = df_tasks_pending['due_category'].value_counts().reset_index()
+                due_counts.columns = ['category', 'count']
 
-            df_tasks_pending['due_category'] = df_tasks_pending['due_date'].apply(get_due_category)
-            due_counts = df_tasks_pending['due_category'].value_counts().reset_index()
-            due_counts.columns = ['category', 'count']
-
-            category_order = ["Atrasada", "Vence em 7 dias", "Em Dia", "Sem Prazo"]
-            fig_due_date = px.bar(due_counts, x='category', y='count', color='category', text_auto=True,
-                                  labels={'category': 'Status do Prazo', 'count': 'Nº de Tarefas'},
-                                  color_discrete_map={'Atrasada': '#d62728', 'Vence em 7 dias': '#ff7f0e', 'Em Dia': '#2ca02c', 'Sem Prazo': '#7f7f7f'},
-                                  category_orders={"category": category_order})
-            fig_due_date.update_layout(xaxis_title=None, showlegend=False)
-            st.plotly_chart(fig_due_date, use_container_width=True)
+                category_order = ["Atrasada", "Vence em 7 dias", "Em Dia", "Sem Prazo"]
+                fig_due_date = px.bar(due_counts, x='category', y='count', color='category', text_auto=True,
+                                      title="Análise de Prazos das Tarefas Pendentes",
+                                      labels={'category': 'Status do Prazo', 'count': 'Nº de Tarefas'},
+                                      color_discrete_map={'Atrasada': '#d62728', 'Vence em 7 dias': '#ff7f0e', 'Em Dia': '#2ca02c', 'Sem Prazo': '#7f7f7f'},
+                                      category_orders={"category": category_order})
+                fig_due_date.update_layout(xaxis_title=None, yaxis_title="Nº de Tarefas", showlegend=False)
+                st.plotly_chart(fig_due_date, use_container_width=True)
+            else:
+                st.info("Nenhuma tarefa pendente.")
 
         st.divider()
         st.subheader("Cronograma da Obra (Gráfico de Gantt)")
-        if not st.session_state.tasks:
+        if df_tasks.empty:
             st.info("Nenhuma tarefa para exibir no cronograma.")
         else:
-            gantt_data = [dict(Task=t.get("name"), Start=t.get("created_at"), Finish=t.get("due_date"), Resource=t.get("team")) for t in st.session_state.tasks]
-            df_gantt = pd.DataFrame(gantt_data)
+            df_gantt = df_tasks[['name', 'created_at', 'due_date', 'team']].copy()
+            df_gantt.rename(columns={'name': 'Task', 'created_at': 'Start', 'due_date': 'Finish', 'team': 'Resource'}, inplace=True)
+            df_gantt.dropna(subset=['Start', 'Finish'], inplace=True)
 
-            if not df_gantt['Start'].isnull().all() and not df_gantt['Finish'].isnull().all():
-                fig_gantt = px.timeline(df_gantt, x_start="Start", x_end="Finish", y="Task", color="Resource", title="Linha do Tempo das Tarefas")
-                fig_gantt.update_yaxes(autorange="reversed")
+            if not df_gantt.empty:
+                fig_gantt = px.timeline(df_gantt, x_start="Start", x_end="Finish", y="Task", color="Resource",
+                                        title="Linha do Tempo das Tarefas por Equipe")
+                fig_gantt.update_yaxes(autorange="reversed", title=None)
+                fig_gantt.update_xaxes(title="Linha do Tempo")
+                
+                # Adiciona linha vertical para o dia de hoje
+                fig_gantt.add_shape(type='line',
+                                  x0=datetime.now(), y0=0,
+                                  x1=datetime.now(), y1=1,
+                                  yref='paper',
+                                  line=dict(color='red', width=2, dash='dash'))
+                fig_gantt.add_annotation(x=datetime.now(), y=1.05, yref='paper',
+                                       showarrow=False, text="Hoje",
+                                       font=dict(color="red"))
                 st.plotly_chart(fig_gantt, use_container_width=True)
             else:
-                st.warning("Datas de início/fim inválidas para gerar o cronograma.")
+                st.warning("Nenhuma tarefa com datas válidas para gerar o cronograma.")
 
 # --- ABA 2: GESTÃO DE TAREFAS ---
 with tab2:
@@ -503,6 +639,7 @@ with tab3:
                         all_teams_edit = [t['name'] for t in st.session_state.config.get("teams", [])]
                         current_team_index = all_teams_edit.index(employee['team']) if employee['team'] in all_teams_edit else 0
                         edited_team = st.selectbox("Equipe", options=all_teams_edit, index=current_team_index)
+
                         edited_role = st.text_input("Cargo", value=employee['role'])
 
                         col_btn1, col_btn2 = st.columns(2)
@@ -623,120 +760,63 @@ with tab4:
 # --- ABA 5: RELATÓRIOS DETALHADOS ---
 # =================================================================================
 with tab5:
-    st.subheader("Relatório Detalhado por Atividade")
+    st.subheader("Gerador de Relatórios para Diretoria")
 
+    if 'report_html' not in st.session_state:
+        st.session_state.report_html = None
+
+    # --- PAINEL DE FILTROS ---
+    st.markdown("Selecione os filtros desejados para gerar um relatório detalhado e profissional.")
     if not st.session_state.tasks:
         st.info("Nenhuma tarefa cadastrada para gerar relatórios.")
     else:
-        df_tasks = pd.DataFrame(st.session_state.tasks)
-        df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'])
-        df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'])
+        df_tasks = st.session_state.tasks_df
+        with st.container(border=True):
+            st.markdown("#### **1. Definir Parâmetros do Relatório**")
+            col_filter1, col_filter2, col_filter3 = st.columns(3)
+            all_teams = ["Todas"] + sorted(df_tasks['team'].unique().tolist())
+            selected_team = col_filter1.selectbox("Filtrar por Equipe:", all_teams, key="report_team_filter")
 
-        all_teams = ["Todas"] + sorted(df_tasks['team'].unique().tolist())
-        selected_team_report = st.selectbox("Filtrar por Equipe:", all_teams, key="report_team_filter")
+            all_sectors = ["Todos"] + sorted(df_tasks['sector'].unique().tolist())
+            selected_sector = col_filter2.selectbox("Filtrar por Setor:", all_sectors, key="report_sector_filter")
 
-        all_sectors = ["Todos"] + sorted(df_tasks['sector'].unique().tolist())
-        selected_sector_report = st.selectbox("Filtrar por Setor:", all_sectors, key="report_sector_filter")
+            all_statuses = ["Todos"] + sorted(df_tasks['status'].unique().tolist())
+            selected_status = col_filter3.selectbox("Filtrar por Status:", all_statuses, key="report_status_filter")
 
-        all_statuses = ["Todos"] + sorted(df_tasks['status'].unique().tolist())
-        selected_status_report = st.selectbox("Filtrar por Status:", all_statuses, key="report_status_filter")
+        if st.button("📄 Gerar Relatório", use_container_width=True, type="primary"):
+            # --- LÓGICA DE FILTRAGEM OTIMIZADA ---
+            query = []
+            if selected_team != "Todas":
+                query.append(f"team == '{selected_team}'")
+            if selected_sector != "Todos":
+                query.append(f"sector == '{selected_sector}'")
+            if selected_status != "Todos":
+                query.append(f"status == '{selected_status}'")
+            
+            filtered_report_tasks = df_tasks.query(" and ".join(query)) if query else df_tasks.copy()
 
-        filtered_report_tasks = df_tasks.copy()
-        if selected_team_report != "Todas":
-            filtered_report_tasks = filtered_report_tasks[filtered_report_tasks['team'] == selected_team_report]
-        if selected_sector_report != "Todos":
-            filtered_report_tasks = filtered_report_tasks[filtered_report_tasks['sector'] == selected_sector_report]
-        if selected_status_report != "Todos":
-            filtered_report_tasks = filtered_report_tasks[filtered_report_tasks['status'] == selected_status_report]
-
-        if filtered_report_tasks.empty:
-            st.warning("Nenhuma tarefa encontrada com os filtros selecionados.")
-        else:
-            st.divider()
-            st.markdown("### Visão Geral das Tarefas Filtradas")
-            col_metrics_report1, col_metrics_report2, col_metrics_report3 = st.columns(3)
-            col_metrics_report1.metric("Total de Tarefas", len(filtered_report_tasks))
-            col_metrics_report2.metric("Tarefas Concluídas", len(filtered_report_tasks[filtered_report_tasks['status'] == 'Concluída']))
-            col_metrics_report3.metric("Progresso Médio", f"{filtered_report_tasks['progress'].mean():.1f}%")
-
-            st.divider()
-            st.markdown("### Detalhes das Tarefas")
-
-            for _, row in filtered_report_tasks.iterrows():
-                with st.expander(f"📌 {row['name']} | Equipe: {row['team']} | Setor: {row['sector']}"):
-                    st.write(f"**Status:** {row['status']} | **Progresso:** {row['progress']}%")
-                    st.write(f"**Início:** {row['created_at'].strftime('%d/%m/%Y')} | **Vencimento:** {row['due_date'].strftime('%d/%m/%Y')}")
-
-                    team_name = row['team']
-                    all_employees = st.session_state.people.get("employees", [])
-                    team_members_list = [emp for emp in all_employees if emp.get("team") == team_name]
-
-                    if team_members_list:
-                        st.markdown("👥 **Colaboradores da Equipe:**")
-                        df_colab = pd.DataFrame(team_members_list)[['name', 'role']]
-                        st.dataframe(df_colab, use_container_width=True, hide_index=True)
-                    else:
-                        st.info("Nenhum colaborador cadastrado para esta equipe.")
-
-            st.divider()
-            st.markdown("### Gráficos do Relatório")
-
-            st.markdown("##### Progresso Médio por Equipe (Filtrado)")
-            progress_by_team_report = filtered_report_tasks.groupby('team')['progress'].mean().reset_index()
-            fig_progress_team_report = px.bar(progress_by_team_report, x='team', y='progress',
-                                               title='Progresso Médio por Equipe',
-                                               labels={'team': 'Equipe', 'progress': 'Progresso Médio (%)'})
-            st.plotly_chart(fig_progress_team_report, use_container_width=True)
-
-            st.markdown("##### Distribuição de Status por Setor (Filtrado)")
-            status_by_sector_report = filtered_report_tasks.groupby(['sector', 'status']).size().reset_index(name='count')
-            fig_status_sector_report = px.bar(status_by_sector_report, x='sector', y='count', color='status',
-                                              title='Distribuição de Status por Setor',
-                                              labels={'sector': 'Setor', 'count': 'Nº de Tarefas'},
-                                              color_discrete_map={'Concluída':'#2ca02c', 'Em Andamento':'#ff7f0e', 'Planejada':'#1f77b4'})
-            st.plotly_chart(fig_status_sector_report, use_container_width=True)
-
-            st.markdown("##### Cronograma das Tarefas Filtradas")
-            gantt_data_report = [
-                dict(Task=t.get("name"), Start=t.get("created_at"), Finish=t.get("due_date"), Resource=t.get("team"))
-                for t in filtered_report_tasks.to_dict('records')
-            ]
-            df_gantt_report = pd.DataFrame(gantt_data_report)
-
-            if not df_gantt_report.empty and not df_gantt_report['Start'].isnull().all() and not df_gantt_report['Finish'].isnull().all():
-                fig_gantt_report = px.timeline(df_gantt_report, x_start="Start", x_end="Finish", y="Task", color="Resource",
-                                               title="Linha do Tempo das Tarefas Filtradas")
-                fig_gantt_report.update_yaxes(autorange="reversed")
-                st.plotly_chart(fig_gantt_report, use_container_width=True)
+            if filtered_report_tasks.empty:
+                st.warning("Nenhuma tarefa encontrada com os filtros selecionados.")
+                st.session_state.report_html = None
             else:
-                st.info("Datas de início/fim inválidas ou insuficientes para gerar o cronograma das tarefas filtradas.")
+                filters = {"team": selected_team, "sector": selected_sector, "status": selected_status}
+                project_goals = st.session_state.config.get("project_goals", "")
+                st.session_state.report_html = generate_report_html(filtered_report_tasks, project_goals, filters)
 
-# =================================================================================
-# --- ABA 6: ANÁLISE INTERATIVA COM PYGWALKER ---
-# =================================================================================
-with tab6:
-    st.subheader("Análise Interativa com PyGWalker")
-    st.markdown("Arraste e solte os campos para criar seus próprios gráficos e explorar os dados das tarefas de forma dinâmica.")
+    # --- EXIBIÇÃO DO RELATÓRIO ---
+    if st.session_state.report_html:
+        st.divider()
+        st.markdown("#### **2. Pré-visualização e Download**")
 
-    if not st.session_state.tasks:
-        st.warning("Nenhuma tarefa cadastrada. Adicione tarefas para poder fazer a análise.")
-    else:
-        # Converte a lista de tarefas para um DataFrame do Pandas
-        df_tasks_analysis = pd.DataFrame(st.session_state.tasks)
+        # Botão de Download
+        st.download_button(
+            label="📥 Baixar Relatório em HTML",
+            data=st.session_state.report_html,
+            file_name=f"relatorio_obra_{datetime.now().strftime('%Y%m%d')}.html",
+            mime="text/html",
+            use_container_width=True
+        )
 
-        # Garante que as colunas de data sejam do tipo datetime para melhor análise
-        df_tasks_analysis['created_at'] = pd.to_datetime(df_tasks_analysis['created_at'], errors='coerce')
-        df_tasks_analysis['due_date'] = pd.to_datetime(df_tasks_analysis['due_date'], errors='coerce')
-
-        # Função para obter a instância do PyGWalker em cache para otimizar o desempenho
-        @st.cache_resource
-        def get_pyg_renderer() -> "StreamlitRenderer":
-            # Passa o DataFrame para o PyGWalker.
-            # O arquivo 'spec' salva a configuração do gráfico para que não se perca.
-            # Defina debug=False ao publicar o aplicativo.
-            return StreamlitRenderer(df_tasks_analysis, spec="./gw_config.json", debug=False)
-
-        renderer = get_pyg_renderer()
-
-        # Renderiza a interface de exploração de dados do PyGWalker
-        renderer.render_explore()
+        # Pré-visualização
+        with st.container(height=600, border=True):
+            st.components.v1.html(st.session_state.report_html, height=600, scrolling=True)
