@@ -3,10 +3,10 @@
     "name": "Arrimo 1º parte",
     "team": "Equipe A",
     "sector": "Setor 5",
-    "progress": 0,
+    "progress": 19,
     "created_at": "2025-08-25",
-    "due_date": "2025-08-29",
-    "status": "Planejada",
+    "due_date": "2025-08-30",
+    "status": "Em Andamento",
     "id": "3d73c7bb-c811-4906-9b91-a05225538bf4"
   },
   {
@@ -63,6 +63,16 @@
     "id": "5f22317b-1996-4669-b604-575809c9a2bb",
     "name": "Central de betoneiras",
     "team": "Equipe G",
+    "sector": "Setor 5",
+    "progress": 0,
+    "created_at": "2025-08-25",
+    "due_date": "2025-08-29",
+    "status": "Planejada"
+  },
+  {
+    "id": "d70817d7-5c15-48e4-8a8f-ff2d8301dcd4",
+    "name": "Reaterro mecanizado M7/M8  Casa de Comando",
+    "team": "Equipe H",
     "sector": "Setor 5",
     "progress": 0,
     "created_at": "2025-08-25",
