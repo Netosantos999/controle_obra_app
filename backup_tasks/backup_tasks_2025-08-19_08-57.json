@@ -1,0 +1,72 @@
+[
+  {
+    "name": "Arrimo 1º parte",
+    "team": "Equipe A",
+    "sector": "Setor 5",
+    "progress": 5,
+    "created_at": "2025-08-01",
+    "due_date": "2025-08-22",
+    "status": "Em Andamento",
+    "id": "3d73c7bb-c811-4906-9b91-a05225538bf4"
+  },
+  {
+    "name": " Postes (perfuração, base de fundo, manilhas)",
+    "team": "Equipe C",
+    "sector": "Setor 1",
+    "progress": 2,
+    "created_at": "2025-08-11",
+    "due_date": "2025-08-22",
+    "status": "Em Andamento",
+    "id": "64f833b7-06f8-4914-98f5-3696d64fd35b"
+  },
+  {
+    "name": "Canaletas e Tubulações Elétricas Externas",
+    "team": "Equipe C",
+    "sector": "Setor 1",
+    "progress": 0,
+    "created_at": "2025-08-18",
+    "due_date": "2025-08-22",
+    "status": "Planejada",
+    "id": "ce9b346b-cb8d-4aed-be81-49b708092ce1"
+  },
+  {
+    "name": "Drenagem/Sanitário e Canaleta Casa de Comando",
+    "team": "Equipe E",
+    "sector": "Setor 4",
+    "progress": 0,
+    "created_at": "2025-08-18",
+    "due_date": "2025-08-29",
+    "status": "Planejada",
+    "id": "7d67489a-74ca-46ad-943e-9552c077bb3d"
+  },
+  {
+    "name": " Casa de Comando",
+    "team": "Equipe F",
+    "sector": "Setor 4",
+    "progress": 13,
+    "created_at": "2025-08-18",
+    "due_date": "2025-08-31",
+    "status": "Em Andamento",
+    "id": "851587a4-6a8d-47d4-852e-d9130a6c63e5"
+  },
+  {
+    "id": "c5841fad-fd8c-4d32-8d97-491b8f54544c",
+    "name": "Arrimo 2º parte",
+    "team": "Equipe B",
+    "sector": "Setor 5",
+    "progress": 12,
+    "created_at": "2025-08-18",
+    "due_date": "2025-08-22",
+    "status": "Em Andamento"
+  },
+  {
+    "id": "5f22317b-1996-4669-b604-575809c9a2bb",
+    "name": "Central de betoneiras",
+    "team": "Equipe G",
+    "sector": "Setor 5",
+    "progress": 34,
+    "created_at": "2025-08-18",
+    "due_date": "2025-08-22",
+    "status": "Em Andamento"
+  }
+]
