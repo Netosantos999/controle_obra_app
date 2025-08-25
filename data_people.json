@@ -49,24 +49,6 @@
       "role": "PEDREIRO"
     },
     {
-      "id": "a0e17ad4-500b-4dc9-a3a5-39922b866db5",
-      "name": "JARDEL QUEIROZ GOMES DA SILVA",
-      "team": "Equipe B",
-      "role": "SERVENTE"
-    },
-    {
-      "id": "c7319937-1733-41ed-a90f-ce648d63804e",
-      "name": "BRENO DA SILVA LEMOS",
-      "team": "Equipe B",
-      "role": "SERVENTE"
-    },
-    {
-      "id": "9d844d79-3f0c-4649-9860-6e5f7869eed2",
-      "name": "LUCAS FERREIRA DA SILVA",
-      "team": "Equipe B",
-      "role": "SERVENTE"
-    },
-    {
       "id": "ff87b833-bea5-4d08-8a96-47322ccdcbb0",
       "name": "CANDIDO MARTINS DE SOUSA",
       "team": "Equipe C",
@@ -83,12 +65,6 @@
       "name": "ROBERTO DE SOUSA GERMANO",
       "team": "Equipe D",
       "role": "PEDREIRO"
-    },
-    {
-      "id": "1fbe6026-48aa-4f47-b164-4f365035cc14",
-      "name": "ANTONIO SERGIO ALMEIDA LIMA",
-      "team": "Equipe D",
-      "role": "SERVENTE"
     },
     {
       "id": "67dcbf51-1769-4f82-bed7-ba6f05fe1f8a",
@@ -179,6 +155,24 @@
       "name": "CARLOS JOSE FERREIRA DA SILVA",
       "team": "Equipe G",
       "role": "SERVENTE"
+    },
+    {
+      "id": "1aacfdf1-379f-4d73-a178-df30c4aa0b42",
+      "name": "CICERO BATISTA DA SILVA",
+      "team": "Equipe H",
+      "role": "PEDREIRO"
+    },
+    {
+      "id": "d1ddc0ab-4d37-4bd8-8d3c-062890ebfba5",
+      "name": "ANTONIO ELAIRTO DA SILVA",
+      "team": "Equipe H",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "ccda4363-c3a8-4e95-9a31-0901c5d2a103",
+      "name": "ADÃO DA SILVA LOPES",
+      "team": "Equipe H",
+      "role": "PEDREIRO"
     }
   ]
 }

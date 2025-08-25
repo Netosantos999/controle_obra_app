@@ -1,5 +1,83 @@
 [
   {
+    "type": "➕",
+    "title": "Nova Tarefa Criada",
+    "desc": "'Reaterro mecanizado M7/M8  Casa de Comando' atribuída à Equipe H.",
+    "time": "25/08 15:09"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "A tarefa 'Arrimo 1º parte' foi atualizada.",
+    "time": "25/08 15:07"
+  },
+  {
+    "type": "⚙️",
+    "title": "Metas Atualizadas",
+    "desc": "As metas gerais da obra foram definidas/atualizadas.",
+    "time": "25/08 15:07"
+  },
+  {
+    "type": "⚙️",
+    "title": "Metas Atualizadas",
+    "desc": "As metas gerais da obra foram definidas/atualizadas.",
+    "time": "25/08 15:07"
+  },
+  {
+    "type": "👤",
+    "title": "Novo Colaborador",
+    "desc": "ADÃO DA SILVA LOPES adicionado à equipe Equipe H.",
+    "time": "25/08 15:06"
+  },
+  {
+    "type": "👤",
+    "title": "Novo Colaborador",
+    "desc": "ANTONIO ELAIRTO DA SILVA adicionado à equipe Equipe H.",
+    "time": "25/08 15:06"
+  },
+  {
+    "type": "👤",
+    "title": "Novo Colaborador",
+    "desc": "CICERO BATISTA DA SILVA adicionado à equipe Equipe H.",
+    "time": "25/08 15:05"
+  },
+  {
+    "type": "⚙️",
+    "title": "Equipe Adicionada",
+    "desc": "A equipe 'Equipe H' foi criada.",
+    "time": "25/08 15:04"
+  },
+  {
+    "type": "🗑️",
+    "title": "Funcionário Removido",
+    "desc": "O funcionário 'ANTONIO SERGIO ALMEIDA LIMA' foi removido.",
+    "time": "25/08 15:03"
+  },
+  {
+    "type": "🗑️",
+    "title": "Funcionário Removido",
+    "desc": "O funcionário 'JARDEL QUEIROZ GOMES DA SILVA' foi removido.",
+    "time": "25/08 15:02"
+  },
+  {
+    "type": "🗑️",
+    "title": "Funcionário Removido",
+    "desc": "O funcionário 'BRENO DA SILVA LEMOS' foi removido.",
+    "time": "25/08 15:02"
+  },
+  {
+    "type": "🗑️",
+    "title": "Funcionário Removido",
+    "desc": "O funcionário 'LUCAS FERREIRA DA SILVA' foi removido.",
+    "time": "25/08 15:02"
+  },
+  {
+    "type": "🔄",
+    "title": "Tarefa Atualizada",
+    "desc": "A tarefa 'Arrimo 1º parte' foi atualizada.",
+    "time": "25/08 15:00"
+  },
+  {
     "type": "🔄",
     "title": "Tarefa Atualizada",
     "desc": "A tarefa 'Arrimo 1º parte' foi atualizada.",
