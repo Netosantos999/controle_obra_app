@@ -7,6 +7,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import uuid
+import io
+import zipfile
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -91,6 +93,25 @@ def check_authentication():
 
 
 # --- FUNÇÕES DE LÓGICA DE NEGÓCIO E UI ---
+
+def create_backup_zip():
+    """Cria um arquivo ZIP em memória contendo todos os arquivos de dados."""
+    data_files = [TASKS_FILE, ACTIVITIES_FILE, CONFIG_FILE, PEOPLE_FILE]
+    
+    # Garante que todos os dados em memória (session_state) sejam salvos antes do backup
+    if 'tasks' in st.session_state: DataManager.save(TASKS_FILE, st.session_state.tasks)
+    if 'activities' in st.session_state: DataManager.save(ACTIVITIES_FILE, st.session_state.activities)
+    if 'config' in st.session_state: DataManager.save(CONFIG_FILE, st.session_state.config)
+    if 'people' in st.session_state: DataManager.save(PEOPLE_FILE, st.session_state.people)
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_f:
+        for file_path in data_files:
+            if os.path.exists(file_path):
+                zip_f.write(file_path, arcname=os.path.basename(file_path))
+    
+    zip_buffer.seek(0)
+    return zip_buffer.getvalue()
 
 def get_due_category(due_date, today=pd.to_datetime(date.today())):
     """Classifica uma tarefa pendente com base na sua data de vencimento."""
@@ -365,6 +386,21 @@ with st.sidebar:
     for activity in st.session_state.activities[:5]:
         st.info(f"**{activity['type']} {activity['title']}**\n\n_{activity['desc']}_\n\n`{activity['time']}`")
     st.divider()
+
+    if is_admin:
+        with st.expander("⚙️ Backup e Manutenção", expanded=False):
+            st.info("Faça o download de todos os dados da aplicação em um único arquivo .zip.")
+            
+            zip_bytes = create_backup_zip()
+            
+            st.download_button(
+                label="📥 Baixar Backup Completo",
+                data=zip_bytes,
+                file_name=f"backup_gestor_obras_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
+                mime="application/zip",
+                use_container_width=True
+            )
+
     with st.expander("👥 Equipes e Funcionários", expanded=False):
         employees = st.session_state.people.get('employees', [])
         if not employees:
@@ -741,10 +777,19 @@ with tab4:
                         if new_name and not any(s['name'].lower() == new_name.lower() for s in st.session_state.config["sectors"] if s['name'] != old_name):
                             st.session_state.config["sectors"][i]['name'] = new_name
                             DataManager.save(CONFIG_FILE, st.session_state.config)
+                            # Atualiza em cascata as tarefas
                             for task in st.session_state.tasks:
                                 if task.get('sector') == old_name:
                                     task['sector'] = new_name
                             save_tasks_state()
+                            
+                            # Força a recriação do DataFrame para consistência
+                            df_tasks = pd.DataFrame(st.session_state.tasks)
+                            if not df_tasks.empty:
+                                df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
+                                df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'], errors='coerce')
+                            st.session_state.tasks_df = df_tasks
+
                             add_activity("update", "Setor Atualizado", f"Setor '{old_name}' atualizado para '{new_name}'.")
                             st.rerun()
                         else:
@@ -794,6 +839,14 @@ with tab4:
                                 if emp.get('team') == old_name:
                                     emp['team'] = new_name
                             DataManager.save(PEOPLE_FILE, st.session_state.people)
+
+                            # Força a recriação do DataFrame para consistência
+                            df_tasks = pd.DataFrame(st.session_state.tasks)
+                            if not df_tasks.empty:
+                                df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
+                                df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'], errors='coerce')
+                            st.session_state.tasks_df = df_tasks
+
                             add_activity("update", "Equipe Atualizada", f"Equipe '{old_name}' atualizada para '{new_name}'.")
                             st.rerun()
                         else:
