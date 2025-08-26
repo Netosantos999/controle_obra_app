@@ -1,4 +1,4 @@
-# PLANEJAMENTO_DE_OBRA.py (Versão Otimizada)
+# PLANEJAMENTO_DE_OBRA.py (Versão Final Consolidada)
 import streamlit as st
 import json
 import os
@@ -7,6 +7,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import uuid
+import io
+import zipfile
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -92,6 +94,25 @@ def check_authentication():
 
 # --- FUNÇÕES DE LÓGICA DE NEGÓCIO E UI ---
 
+def create_backup_zip():
+    """Cria um arquivo ZIP em memória contendo todos os arquivos de dados."""
+    data_files = [TASKS_FILE, ACTIVITIES_FILE, CONFIG_FILE, PEOPLE_FILE]
+    
+    # Garante que todos os dados em memória (session_state) sejam salvos antes do backup
+    if 'tasks' in st.session_state: DataManager.save(TASKS_FILE, st.session_state.tasks)
+    if 'activities' in st.session_state: DataManager.save(ACTIVITIES_FILE, st.session_state.activities)
+    if 'config' in st.session_state: DataManager.save(CONFIG_FILE, st.session_state.config)
+    if 'people' in st.session_state: DataManager.save(PEOPLE_FILE, st.session_state.people)
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_f:
+        for file_path in data_files:
+            if os.path.exists(file_path):
+                zip_f.write(file_path, arcname=os.path.basename(file_path))
+    
+    zip_buffer.seek(0)
+    return zip_buffer.getvalue()
+
 def get_due_category(due_date, today=pd.to_datetime(date.today())):
     """Classifica uma tarefa pendente com base na sua data de vencimento."""
     if pd.isna(due_date):
@@ -103,80 +124,195 @@ def get_due_category(due_date, today=pd.to_datetime(date.today())):
         return "Vence em 7 dias"
     return "Em Dia"
 
-def generate_report_html(filtered_df, project_goals, filters):
-    """Gera um relatório HTML completo e estilizado a partir dos dados filtrados."""
+def generate_report_html(filtered_df, personnel_df, project_goals, filters):
+    """Gera um relatório HTML completo e estilizado, com foco em didática e profissionalismo."""
     
-    # --- Métricas ---
+    # --- Pré-processamento e Cálculos Adicionais ---
+    today = pd.to_datetime(date.today())
+    
+    # Calcula dias de atraso ou dias restantes
+    def calculate_due_days(row):
+        if pd.isna(row['due_date']):
+            return None, 'secondary' # Sem prazo
+        if row['status'] == 'Concluída':
+            return None, 'success' # Concluída
+        
+        delta = (row['due_date'] - today).days
+        if delta < 0:
+            return f"{abs(delta)} dias de atraso", 'danger'
+        elif delta <= 7:
+            return f"Vence em {delta} dias", 'warning'
+        else:
+            return f"Vence em {delta} dias", 'primary'
+
+    filtered_df[['due_days_text', 'due_days_color']] = filtered_df.apply(calculate_due_days, axis=1, result_type='expand')
+
+    # --- Métricas Principais ---
     total_tasks = len(filtered_df)
     completed_tasks = len(filtered_df[filtered_df['status'] == 'Concluída'])
     progress = filtered_df['progress'].mean() if total_tasks > 0 else 0
-    overdue_tasks = len(filtered_df[(filtered_df['due_date'] < pd.to_datetime(datetime.now())) & (filtered_df['status'] != 'Concluída')])
+    overdue_tasks_df = filtered_df[(filtered_df['due_date'] < today) & (filtered_df['status'] != 'Concluída')]
+    overdue_tasks = len(overdue_tasks_df)
     completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
 
-    # --- Gráficos (convertidos para HTML) ---
-    # Gráfico de Status
+    # Processar as metas para formato de lista HTML
+    goals_html = ""
+    if project_goals and project_goals.strip():
+        goals_list = [goal.strip() for goal in project_goals.strip().split('\n') if goal.strip()]
+        goals_html = '<ul style="margin-top: 10px; padding-left: 20px;">'
+        for goal in goals_list:
+            goals_html += f"<li>{goal}</li>"
+        goals_html += "</ul>"
+    else:
+        goals_html = "<p style='margin-top:10px;'>Nenhuma meta definida.</p>"
+
+
+    # --- Geração de Gráficos (convertidos para HTML) ---
+    # Gráfico de Status (Pizza)
     status_counts = filtered_df['status'].value_counts().reset_index()
     status_counts.columns = ['status', 'count']
     fig_status = px.pie(status_counts, names='status', values='count', hole=.4,
                         title="Distribuição por Status",
-                        color='status', color_discrete_map={'Concluída':'#2ca02c', 'Em Andamento':'#ff7f0e', 'Planejada':'#1f77b4'})
-    fig_status.update_layout(legend_title_text='Status', margin=dict(t=40, b=20, l=20, r=20))
+                        color='status', color_discrete_map={'Concluída':'#28a745', 'Em Andamento':'#ffc107', 'Planejada':'#007bff'})
+    fig_status.update_layout(legend_title_text='Status', margin=dict(t=40, b=20, l=20, r=20), font_family="Arial")
     status_chart_html = fig_status.to_html(full_html=False, include_plotlyjs='cdn')
 
-    # Gráfico de Prazos
-    today = pd.to_datetime(date.today())
+    # Gráfico de Prazos (Barras)
     df_pending = filtered_df[filtered_df['status'] != 'Concluída'].copy()
     due_chart_html = ""
     if not df_pending.empty:
-        df_pending['due_category'] = df_pending['due_date'].apply(get_due_category)
+        df_pending['due_category'] = df_pending['due_date'].apply(lambda d: get_due_category(d, today))
         due_counts = df_pending['due_category'].value_counts().reset_index()
         due_counts.columns = ['category', 'count']
         category_order = ["Atrasada", "Vence em 7 dias", "Em Dia", "Sem Prazo"]
         fig_due = px.bar(due_counts, x='category', y='count', color='category', text_auto=True,
                          title="Análise de Prazos (Tarefas Pendentes)",
                          labels={'category': 'Status do Prazo', 'count': 'Nº de Tarefas'},
-                         color_discrete_map={'Atrasada': '#d62728', 'Vence em 7 dias': '#ff7f0e', 'Em Dia': '#2ca02c', 'Sem Prazo': '#7f7f7f'},
+                         color_discrete_map={'Atrasada': '#dc3545', 'Vence em 7 dias': '#ffc107', 'Em Dia': '#28a745', 'Sem Prazo': '#6c757d'},
                          category_orders={"category": category_order})
-        fig_due.update_layout(xaxis_title=None, yaxis_title="Nº de Tarefas", showlegend=False)
+        fig_due.update_layout(xaxis_title=None, yaxis_title="Nº de Tarefas", showlegend=False, font_family="Arial")
         due_chart_html = fig_due.to_html(full_html=False, include_plotlyjs='cdn')
 
-    # --- Tabela de Tarefas (convertida para HTML) ---
-    df_display = filtered_df[['name', 'team', 'sector', 'status', 'progress', 'created_at', 'due_date']].copy()
-    df_display.rename(columns={'name': 'Tarefa', 'team': 'Equipe', 'sector': 'Setor', 'status': 'Status', 'progress': 'Progresso (%)', 'created_at': 'Início', 'due_date': 'Vencimento'}, inplace=True)
-    df_display['Início'] = df_display['Início'].dt.strftime('%d/%m/%Y')
-    df_display['Vencimento'] = df_display['Vencimento'].dt.strftime('%d/%m/%Y')
-    tasks_table_html = df_display.to_html(index=False, border=0, classes='dataframe')
+    # Gráfico de Gantt (Cronograma)
+    gantt_chart_html = "<p>Nenhuma tarefa com datas válidas para gerar o cronograma.</p>"
+    df_gantt = filtered_df[['name', 'created_at', 'due_date', 'team']].copy()
+    df_gantt.rename(columns={'name': 'Task', 'created_at': 'Start', 'due_date': 'Finish', 'team': 'Resource'}, inplace=True)
+    df_gantt.dropna(subset=['Start', 'Finish'], inplace=True)
+    if not df_gantt.empty:
+        unique_teams = df_gantt['Resource'].unique()
+        color_palette = px.colors.qualitative.Plotly 
+        team_color_map = {team: color_palette[i % len(color_palette)] for i, team in enumerate(unique_teams)}
+        fig_gantt = px.timeline(df_gantt, x_start="Start", x_end="Finish", y="Task", color="Resource", title="Cronograma da Obra",
+                                color_discrete_map=team_color_map)
+        fig_gantt.update_yaxes(autorange="reversed", title=None)
+        fig_gantt.update_xaxes(title="Linha do Tempo")
+        fig_gantt.add_shape(type='line', x0=datetime.now(), y0=0, x1=datetime.now(), y1=1, yref='paper', line=dict(color='#dc3545', width=2, dash='dash'))
+        fig_gantt.add_annotation(x=datetime.now(), y=1.05, yref='paper', showarrow=False, text="Hoje", font=dict(color="#dc3545"))
+        gantt_chart_html = fig_gantt.to_html(full_html=False, include_plotlyjs='cdn')
 
-    # --- Template HTML ---
+
+    # --- Geração de Tabelas (convertidas para HTML) ---
+    
+    # Tabela de Tarefas Detalhada com Estilos
+    df_display = filtered_df[['name', 'team', 'sector', 'status', 'progress', 'due_date', 'due_days_text', 'due_days_color']].copy()
+    df_display.rename(columns={'name': 'Tarefa', 'team': 'Equipe', 'sector': 'Setor', 'status': 'Status', 'progress': 'Progresso', 'due_date': 'Vencimento'}, inplace=True)
+    df_display['Vencimento'] = df_display['Vencimento'].dt.strftime('%d/%m/%Y')
+    
+    status_map = {'Concluída': 'success', 'Em Andamento': 'warning', 'Planejada': 'primary'}
+    tasks_table_html = "<thead><tr><th>Tarefa</th><th>Equipe</th><th>Setor</th><th>Status</th><th>Progresso</th><th>Prazo</th></tr></thead><tbody>"
+    for _, row in df_display.iterrows():
+        tasks_table_html += f"""
+            <tr class="{'table-danger' if row['due_days_color'] == 'danger' else ''}">
+                <td>{row['Tarefa']}</td>
+                <td>{row['Equipe']}</td>
+                <td>{row['Setor']}</td>
+                <td><span class="badge badge-{status_map.get(row['Status'], 'secondary')}">{row['Status']}</span></td>
+                <td>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: {row['Progresso']}%; background-color: {'#28a745' if row['Progresso'] == 100 else '#007bff'};">{row['Progresso']}%</div>
+                    </div>
+                </td>
+                <td>
+                    {row['Vencimento']}
+                    <small class="badge-prazo badge-prazo-{row['due_days_color']}">{row['due_days_text'] if row['due_days_text'] else ''}</small>
+                </td>
+            </tr>
+        """
+    tasks_table_html += "</tbody>"
+    tasks_table_html = f'<table class="dataframe">{tasks_table_html}</table>'
+
+    # Tabela de Pessoal
+    total_employees = len(personnel_df)
+    personnel_table_html = ""
+    if not personnel_df.empty:
+        # Tabela de resumo de colaboradores por equipe
+        team_counts = personnel_df['team'].value_counts().reset_index()
+        team_counts.columns = ['Equipe', 'Nº de Colaboradores']
+        team_summary_html = team_counts.to_html(index=False, border=0, classes='dataframe')
+        
+        # Tabela detalhada de todos os colaboradores
+        df_people_display = personnel_df[['name', 'team', 'role']].copy().sort_values(by=['team', 'name'])
+        df_people_display.rename(columns={'name': 'Nome', 'team': 'Equipe', 'role': 'Função'}, inplace=True)
+        personnel_list_html = df_people_display.to_html(index=False, border=0, classes='dataframe')
+
+
+    # --- Template HTML Completo ---
     html_template = f"""
     <!DOCTYPE html>
     <html lang="pt-br">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="UTF-G">
         <title>Relatório de Andamento da Obra</title>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
         <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0; }}
-            .container {{ max-width: 1100px; margin: 20px auto; padding: 20px; background-color: #fff; border: 1px solid #ddd; box-shadow: 0 0 10px rgba(0,0,0,0.05); }}
-            header {{ text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }}
-            header h1 {{ margin: 0; color: #1f77b4; }}
-            header p {{ margin: 5px 0 0; color: #777; }}
-            .section {{ margin-bottom: 40px; }}
-            .section h2 {{ color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }}
-            .metrics-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center; }}
-            .metric {{ background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; }}
-            .metric .value {{ font-size: 2.5em; font-weight: bold; color: #1f77b4; }}
-            .metric .label {{ font-size: 1em; color: #666; margin-top: 5px; }}
+            body {{ font-family: 'Roboto', sans-serif; line-height: 1.6; color: #333; background-color: #f4f7f9; margin: 0; padding: 0; }}
+            .container {{ max-width: 1200px; margin: 20px auto; padding: 25px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }}
+            header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #007bff; padding-bottom: 20px; margin-bottom: 25px; }}
+            header h1 {{ margin: 0; color: #004a99; font-size: 2.2em; font-weight: 700;}}
+            .report-info p {{ margin: 2px 0; text-align: right; color: #555; font-size: 0.9em; }}
+            .section {{ margin-bottom: 45px; }}
+            .section h2 {{ font-size: 1.6em; color: #004a99; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; font-weight: 700; }}
+            .metrics-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }}
+            .metric {{ background-color: #fff; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #e0e0e0; transition: all 0.3s ease; }}
+            .metric:hover {{ transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }}
+            .metric .value {{ font-size: 2.8em; font-weight: 700; color: #007bff; }}
+            .metric .value.danger {{ color: #dc3545; }}
+            .metric .label {{ font-size: 1.1em; color: #666; margin-top: 5px; }}
+            .summary-box {{ background-color: #e7f5ff; border-left: 5px solid #007bff; padding: 20px; margin-bottom: 25px; border-radius: 5px; }}
+            .summary-box strong {{ color: #004a99; }}
+            .charts-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; align-items: start; }}
+            .chart {{ border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fff; }}
+            .chart-desc {{ font-size: 0.9em; color: #777; text-align: center; margin-top: 5px; }}
             .dataframe {{ width: 100%; border-collapse: collapse; }}
-            .dataframe th, .dataframe td {{ padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }}
-            .dataframe th {{ background-color: #f2f2f2; font-weight: bold; }}
-            .dataframe tbody tr:hover {{ background-color: #f5f5f5; }}
-            .charts-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
-            .chart {{ border: 1px solid #ddd; padding: 10px; border-radius: 8px; }}
-            .goals {{ background-color: #e7f3ff; border-left: 4px solid #1f77b4; padding: 15px; margin-bottom: 20px; white-space: pre-wrap; }}
-            @media print {{
-                body {{ background-color: #fff; }}
-                .container {{ box-shadow: none; border: none; margin: 0; max-width: 100%; }}
+            .dataframe th, .dataframe td {{ padding: 12px 15px; text-align: left; border-bottom: 1px solid #e0e0e0; }}
+            .dataframe th {{ background-color: #f2f7fc; font-weight: bold; color: #004a99; }}
+            .dataframe tbody tr:hover {{ background-color: #f8f9fa; }}
+            .dataframe .table-danger, .dataframe .table-danger:hover {{ background-color: #f8d7da !important; }}
+            .badge {{ display: inline-block; padding: .35em .65em; font-size: 85%; font-weight: 700; line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25rem; color: #fff; }}
+            .badge-primary {{ background-color: #007bff; }}
+            .badge-success {{ background-color: #28a745; }}
+            .badge-warning {{ background-color: #ffc107; color: #212529;}}
+            .badge-danger {{ background-color: #dc3545; }}
+            .badge-secondary {{ background-color: #6c757d; }}
+            .badge-prazo {{ font-size: 0.8em; margin-left: 8px; padding: 0.2em 0.5em; border-radius: 10px; }}
+            .badge-prazo-danger {{ background-color: #dc3545; color: white;}}
+            .badge-prazo-warning {{ background-color: #ffc107; color: #212529;}}
+            .badge-prazo-primary {{ background-color: #e7f5ff; color: #007bff;}}
+            .badge-prazo-success {{ background-color: #d4edda; color: #155724;}}
+            .badge-prazo-secondary {{ background-color: #e9ecef; color: #343a40;}}
+            .progress-bar-container {{ width: 100%; background-color: #e9ecef; border-radius: .25rem; }}
+            .progress-bar {{ height: 20px; line-height: 20px; text-align: center; color: white; font-size: 0.85em; border-radius: .25rem; }}
+            .personnel-list-container {{ max-height: 400px; overflow-y: auto; }}
+            footer {{ text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.9em; color: #888; }}
+            
+            @media print {{ 
+                body {{ background-color: #fff; }} 
+                .container {{ box-shadow: none; border: none; margin: 0; max-width: 100%; }} 
+                .personnel-list-container {{ 
+                    max-height: none !important; 
+                    overflow-y: visible !important; 
+                }}
+                .no-print {{ display: none; }}
             }}
         </style>
     </head>
@@ -184,33 +320,75 @@ def generate_report_html(filtered_df, project_goals, filters):
         <div class="container">
             <header>
                 <h1>Relatório de Andamento da Obra</h1>
-                <p><strong>Data de Emissão:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
-                <p><strong>Filtros:</strong> Equipe: {filters['team']}, Setor: {filters['sector']}, Status: {filters['status']}</p>
+                <div class="report-info">
+                    <p><strong>Data de Emissão:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                    <p><strong>Filtros Aplicados:</strong></p>
+                    <p>Equipe: {filters['team']} | Setor: {filters['sector']} | Status: {filters['status']}</p>
+                </div>
             </header>
 
             <div class="section">
-                <h2>1. Resumo Executivo e Metas</h2>
-                <div class="goals"><strong>Metas do Projeto:</strong><br>{project_goals if project_goals else "Nenhuma meta definida."}</div>
+                <h2>1. Sumário Executivo e Metas</h2>
+                <div class="summary-box"><strong>Metas do Projeto:</strong>
+                {goals_html}
+                </div>
                 <div class="metrics-grid">
                     <div class="metric"><div class="value">{total_tasks}</div><div class="label">Total de Tarefas</div></div>
-                    <div class="metric"><div class="value">{progress:.1f}%</div><div class="label">Progresso Médio</div></div>
+                    <div class="metric"><div class="value">{progress:.1f}%</div><div class="label">Progresso Médio Geral</div></div>
                     <div class="metric"><div class="value">{completion_rate:.1f}%</div><div class="label">Taxa de Conclusão</div></div>
-                    <div class="metric"><div class="value" style="color: #d62728;">{overdue_tasks}</div><div class="label">Tarefas Atrasadas</div></div>
+                    <div class="metric"><div class="value class {'danger' if overdue_tasks > 0 else ''}">{overdue_tasks}</div><div class="label">Tarefas Atrasadas</div></div>
                 </div>
+            </div>
+            
+            <div class="section">
+                <h2>2. Cronograma Geral da Obra</h2>
+                <div class="chart">{gantt_chart_html}</div>
+                <p class="chart-desc">O Gráfico de Gantt ilustra a linha do tempo das atividades, permitindo visualizar a duração e a sobreposição das tarefas.</p>
             </div>
 
             <div class="section">
-                <h2>2. Análise Gráfica</h2>
+                <h2>3. Análise de Desempenho</h2>
                 <div class="charts-grid">
-                    <div class="chart">{status_chart_html}</div>
-                    <div class="chart">{due_chart_html if due_chart_html else "<p>Nenhuma tarefa pendente para análise.</p>"}</div>
+                    <div class="chart">
+                        {status_chart_html}
+                        <p class="chart-desc">Este gráfico mostra a proporção de tarefas concluídas, em andamento e planejadas.</p>
+                    </div>
+                    <div class="chart">
+                        {due_chart_html if due_chart_html else "<p>Nenhuma tarefa pendente para análise de prazo.</p>"}
+                        <p class="chart-desc">Análise focada nas tarefas pendentes, classificando-as por urgência de prazo.</p>
+                    </div>
                 </div>
             </div>
 
             <div class="section">
-                <h2>3. Detalhamento das Atividades</h2>
+                <h2>4. Detalhamento das Atividades</h2>
+                <p>A tabela a seguir lista todas as atividades consideradas neste relatório, com detalhes sobre status, progresso e prazos.</p>
                 {tasks_table_html}
             </div>
+
+            <div class="section">
+                <h2>5. Gestão de Pessoal</h2>
+                <div class="charts-grid">
+                     <div class="chart">
+                        <h3 style="text-align: center; margin-top: 5px;">Colaboradores por Equipe</h3>
+                        {team_summary_html if 'team_summary_html' in locals() and team_summary_html else "<p>Nenhuma equipe para exibir.</p>"}
+                    </div>
+                    <div class="metric" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
+                        <div class="value">{total_employees}</div>
+                        <div class="label">Total de Colaboradores</div>
+                    </div>
+                </div>
+                <br>
+                <h3>Lista Geral de Funcionários</h3>
+                <div class="personnel-list-container">
+                    {personnel_list_html if 'personnel_list_html' in locals() and personnel_list_html else "<p>Nenhum funcionário para exibir.</p>"}
+                </div>
+            </div>
+            
+            <footer>
+                <p>Relatório gerado pelo sistema Gestor de Obras Pro+ | © {datetime.now().year}</p>
+                <p>Desenvolvido por Francelino neto santos.</p>
+            </footer>
         </div>
     </body>
     </html>
@@ -316,6 +494,21 @@ with st.sidebar:
     for activity in st.session_state.activities[:5]:
         st.info(f"**{activity['type']} {activity['title']}**\n\n_{activity['desc']}_\n\n`{activity['time']}`")
     st.divider()
+
+    if is_admin:
+        with st.expander("⚙️ Backup e Manutenção", expanded=False):
+            st.info("Faça o download de todos os dados da aplicação em um único arquivo .zip.")
+            
+            zip_bytes = create_backup_zip()
+            
+            st.download_button(
+                label="📥 Baixar Backup Completo",
+                data=zip_bytes,
+                file_name=f"backup_gestor_obras_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
+                mime="application/zip",
+                use_container_width=True
+            )
+
     with st.expander("👥 Equipes e Funcionários", expanded=False):
         employees = st.session_state.people.get('employees', [])
         if not employees:
@@ -692,10 +885,19 @@ with tab4:
                         if new_name and not any(s['name'].lower() == new_name.lower() for s in st.session_state.config["sectors"] if s['name'] != old_name):
                             st.session_state.config["sectors"][i]['name'] = new_name
                             DataManager.save(CONFIG_FILE, st.session_state.config)
+                            # Atualiza em cascata as tarefas
                             for task in st.session_state.tasks:
                                 if task.get('sector') == old_name:
                                     task['sector'] = new_name
                             save_tasks_state()
+                            
+                            # Força a recriação do DataFrame para consistência
+                            df_tasks = pd.DataFrame(st.session_state.tasks)
+                            if not df_tasks.empty:
+                                df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
+                                df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'], errors='coerce')
+                            st.session_state.tasks_df = df_tasks
+
                             add_activity("update", "Setor Atualizado", f"Setor '{old_name}' atualizado para '{new_name}'.")
                             st.rerun()
                         else:
@@ -745,6 +947,14 @@ with tab4:
                                 if emp.get('team') == old_name:
                                     emp['team'] = new_name
                             DataManager.save(PEOPLE_FILE, st.session_state.people)
+
+                            # Força a recriação do DataFrame para consistência
+                            df_tasks = pd.DataFrame(st.session_state.tasks)
+                            if not df_tasks.empty:
+                                df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
+                                df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'], errors='coerce')
+                            st.session_state.tasks_df = df_tasks
+
                             add_activity("update", "Equipe Atualizada", f"Equipe '{old_name}' atualizada para '{new_name}'.")
                             st.rerun()
                         else:
@@ -801,7 +1011,8 @@ with tab5:
             else:
                 filters = {"team": selected_team, "sector": selected_sector, "status": selected_status}
                 project_goals = st.session_state.config.get("project_goals", "")
-                st.session_state.report_html = generate_report_html(filtered_report_tasks, project_goals, filters)
+                df_people = pd.DataFrame(st.session_state.people.get('employees', []))
+                st.session_state.report_html = generate_report_html(filtered_report_tasks, df_people, project_goals, filters)
 
     # --- EXIBIÇÃO DO RELATÓRIO ---
     if st.session_state.report_html:

@@ -3,7 +3,7 @@
     "name": "Arrimo 1º parte",
     "team": "Equipe A",
     "sector": "Setor 5",
-    "progress": 19,
+    "progress": 6,
     "created_at": "2025-08-25",
     "due_date": "2025-08-30",
     "status": "Em Andamento",
@@ -13,10 +13,10 @@
     "name": " Postes (perfuração, base de fundo, manilhas)",
     "team": "Equipe C",
     "sector": "Setor 1",
-    "progress": 0,
+    "progress": 3,
     "created_at": "2025-08-25",
-    "due_date": "2025-08-29",
-    "status": "Planejada",
+    "due_date": "2025-08-30",
+    "status": "Em Andamento",
     "id": "64f833b7-06f8-4914-98f5-3696d64fd35b"
   },
   {
@@ -25,7 +25,7 @@
     "sector": "Setor 1",
     "progress": 0,
     "created_at": "2025-08-25",
-    "due_date": "2025-08-29",
+    "due_date": "2025-09-05",
     "status": "Planejada",
     "id": "ce9b346b-cb8d-4aed-be81-49b708092ce1"
   },
@@ -34,8 +34,8 @@
     "team": "Equipe E",
     "sector": "Setor 4",
     "progress": 0,
-    "created_at": "2025-08-25",
-    "due_date": "2025-08-29",
+    "created_at": "2025-09-08",
+    "due_date": "2025-09-12",
     "status": "Planejada",
     "id": "7d67489a-74ca-46ad-943e-9552c077bb3d"
   },
@@ -44,8 +44,8 @@
     "team": "Equipe F",
     "sector": "Setor 4",
     "progress": 0,
-    "created_at": "2025-08-25",
-    "due_date": "2025-08-29",
+    "created_at": "2025-09-08",
+    "due_date": "2025-09-12",
     "status": "Planejada",
     "id": "851587a4-6a8d-47d4-852e-d9130a6c63e5"
   },
@@ -55,8 +55,8 @@
     "team": "Equipe B",
     "sector": "Setor 5",
     "progress": 0,
-    "created_at": "2025-08-25",
-    "due_date": "2025-08-29",
+    "created_at": "2025-09-01",
+    "due_date": "2025-09-05",
     "status": "Planejada"
   },
   {
@@ -64,19 +64,19 @@
     "name": "Central de betoneiras",
     "team": "Equipe G",
     "sector": "Setor 5",
-    "progress": 0,
+    "progress": 5,
     "created_at": "2025-08-25",
-    "due_date": "2025-08-29",
-    "status": "Planejada"
+    "due_date": "2025-08-30",
+    "status": "Em Andamento"
   },
   {
     "id": "d70817d7-5c15-48e4-8a8f-ff2d8301dcd4",
     "name": "Reaterro mecanizado M7/M8  Casa de Comando",
     "team": "Equipe H",
     "sector": "Setor 5",
-    "progress": 0,
+    "progress": 4,
     "created_at": "2025-08-25",
-    "due_date": "2025-08-29",
-    "status": "Planejada"
+    "due_date": "2025-08-30",
+    "status": "Em Andamento"
   }
 ]
