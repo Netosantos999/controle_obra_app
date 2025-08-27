@@ -250,10 +250,20 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
         team_counts.columns = ['Equipe', 'Nº de Colaboradores']
         team_summary_html = team_counts.to_html(index=False, border=0, classes='dataframe')
         
-        # Tabela detalhada de todos os colaboradores
-        df_people_display = personnel_df[['name', 'team', 'role']].copy().sort_values(by=['team', 'name'])
+        # Agrupa as tarefas por equipe, criando uma lista em HTML para cada
+        tasks_by_team = filtered_df.groupby('team')['name'].apply(lambda x: '<br>'.join(x)).reset_index()
+        tasks_by_team.rename(columns={'name': 'Tarefa(s) da Equipe'}, inplace=True)
+
+        # Junta os dados de funcionários com as tarefas de suas equipes
+        enriched_personnel_df = pd.merge(personnel_df, tasks_by_team, on='team', how='left')
+        enriched_personnel_df['Tarefa(s) da Equipe'].fillna('Nenhuma tarefa atribuída à equipe', inplace=True)
+        
+        # Prepara o DataFrame final para exibição
+        df_people_display = enriched_personnel_df[['name', 'team', 'role', 'Tarefa(s) da Equipe']].copy().sort_values(by=['team', 'name'])
         df_people_display.rename(columns={'name': 'Nome', 'team': 'Equipe', 'role': 'Função'}, inplace=True)
-        personnel_list_html = df_people_display.to_html(index=False, border=0, classes='dataframe')
+        
+        # Converte o DataFrame para HTML, permitindo a renderização de tags como <br>
+        personnel_list_html = df_people_display.to_html(index=False, border=0, classes='dataframe', escape=False)
 
 
     # --- Template HTML Completo ---

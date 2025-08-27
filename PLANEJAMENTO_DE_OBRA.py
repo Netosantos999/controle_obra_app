@@ -243,7 +243,8 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
 
     # Tabela de Pessoal
     total_employees = len(personnel_df)
-    personnel_table_html = ""
+    team_summary_html = "<p>Nenhuma equipe para exibir.</p>"
+    personnel_list_html = "<p>Nenhum funcionário para exibir.</p>"
     if not personnel_df.empty:
         # Tabela de resumo de colaboradores por equipe
         team_counts = personnel_df['team'].value_counts().reset_index()
@@ -271,7 +272,7 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
     <!DOCTYPE html>
     <html lang="pt-br">
     <head>
-        <meta charset="UTF-G">
+        <meta charset="UTF-8">
         <title>Relatório de Andamento da Obra</title>
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
         <style>
@@ -323,6 +324,10 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
                     overflow-y: visible !important; 
                 }}
                 .no-print {{ display: none; }}
+                body {{
+                    -webkit-print-color-adjust: exact !important; /* For Chrome/Safari */
+                    print-color-adjust: exact !important; /* Standard property for other browsers */
+                }}
             }}
         </style>
     </head>
@@ -346,7 +351,7 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
                     <div class="metric"><div class="value">{total_tasks}</div><div class="label">Total de Tarefas</div></div>
                     <div class="metric"><div class="value">{progress:.1f}%</div><div class="label">Progresso Médio Geral</div></div>
                     <div class="metric"><div class="value">{completion_rate:.1f}%</div><div class="label">Taxa de Conclusão</div></div>
-                    <div class="metric"><div class="value class {'danger' if overdue_tasks > 0 else ''}">{overdue_tasks}</div><div class="label">Tarefas Atrasadas</div></div>
+                    <div class="metric"><div class="value {'danger' if overdue_tasks > 0 else ''}">{overdue_tasks}</div><div class="label">Tarefas Atrasadas</div></div>
                 </div>
             </div>
             
@@ -381,7 +386,7 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
                 <div class="charts-grid">
                      <div class="chart">
                         <h3 style="text-align: center; margin-top: 5px;">Colaboradores por Equipe</h3>
-                        {team_summary_html if 'team_summary_html' in locals() and team_summary_html else "<p>Nenhuma equipe para exibir.</p>"}
+                        {team_summary_html}
                     </div>
                     <div class="metric" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
                         <div class="value">{total_employees}</div>
@@ -391,7 +396,7 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
                 <br>
                 <h3>Lista Geral de Funcionários</h3>
                 <div class="personnel-list-container">
-                    {personnel_list_html if 'personnel_list_html' in locals() and personnel_list_html else "<p>Nenhum funcionário para exibir.</p>"}
+                    {personnel_list_html}
                 </div>
             </div>
             
