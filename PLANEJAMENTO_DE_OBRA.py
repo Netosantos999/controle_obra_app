@@ -193,6 +193,27 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
         fig_due.update_layout(xaxis_title=None, yaxis_title="Nº de Tarefas", showlegend=False, font_family="Arial")
         due_chart_html = fig_due.to_html(full_html=False, include_plotlyjs='cdn')
 
+    # --- INÍCIO DOS NOVOS GRÁFICOS ---
+    # Gráfico de Progresso por Setor
+    progress_by_sector = filtered_df.groupby('sector')['progress'].mean().sort_values(ascending=False).reset_index()
+    fig_sector_progress = px.bar(progress_by_sector, x='sector', y='progress', text='progress',
+                                title="Progresso Médio por Setor",
+                                color='progress', color_continuous_scale=px.colors.sequential.Greens)
+    fig_sector_progress.update_traces(texttemplate='%{text:.2s}%', textposition='outside')
+    fig_sector_progress.update_layout(xaxis_title="Setor", yaxis_title="Progresso Médio (%)", coloraxis_showscale=False, font_family="Arial")
+    sector_progress_chart_html = fig_sector_progress.to_html(full_html=False, include_plotlyjs='cdn')
+
+    # Gráfico de Carga de Trabalho por Equipe
+    tasks_by_team_status = filtered_df.groupby(['team', 'status']).size().reset_index(name='count')
+    fig_teams_workload = px.bar(tasks_by_team_status, x='team', y='count', color='status',
+                               title="Carga de Trabalho por Equipe e Status",
+                               labels={'team': 'Equipe', 'count': 'Nº de Tarefas', 'status': 'Status'},
+                               color_discrete_map={'Concluída':'#28a745', 'Em Andamento':'#ffc107', 'Planejada':'#007bff'},
+                               text_auto=True)
+    fig_teams_workload.update_layout(xaxis={'categoryorder':'total descending'}, yaxis_title="Nº de Tarefas", xaxis_title=None, font_family="Arial")
+    teams_workload_chart_html = fig_teams_workload.to_html(full_html=False, include_plotlyjs='cdn')
+    # --- FIM DOS NOVOS GRÁFICOS ---
+
     # Gráfico de Gantt (Cronograma)
     gantt_chart_html = "<p>Nenhuma tarefa com datas válidas para gerar o cronograma.</p>"
     df_gantt = filtered_df[['name', 'created_at', 'due_date', 'team']].copy()
@@ -371,6 +392,14 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
                     <div class="chart">
                         {due_chart_html if due_chart_html else "<p>Nenhuma tarefa pendente para análise de prazo.</p>"}
                         <p class="chart-desc">Análise focada nas tarefas pendentes, classificando-as por urgência de prazo.</p>
+                    </div>
+                    <div class="chart">
+                        {sector_progress_chart_html}
+                        <p class="chart-desc">Média de progresso das tarefas agrupadas por cada setor da obra.</p>
+                    </div>
+                    <div class="chart">
+                        {teams_workload_chart_html}
+                        <p class="chart-desc">Distribuição do número de tarefas por status para cada equipe.</p>
                     </div>
                 </div>
             </div>

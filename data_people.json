@@ -25,12 +25,6 @@
       "role": "SERVENTE"
     },
     {
-      "id": "ef74308a-4c35-40aa-b564-883129e4226f",
-      "name": "ROBERTO DE SOUSA GERMANO",
-      "team": "Equipe A",
-      "role": "PEDREIRO"
-    },
-    {
       "id": "1d164154-87a6-4b23-9c5c-35c392cf2f9c",
       "name": "ANTONIO ROCICLEUDO GOMES DOS SANTOS",
       "team": "Equipe A",
@@ -61,28 +55,10 @@
       "role": "SERVENTE"
     },
     {
-      "id": "c1e7be1f-d3c1-40ef-9504-3c4646d66f12",
-      "name": "ROBERTO DE SOUSA GERMANO",
-      "team": "Equipe D",
-      "role": "PEDREIRO"
-    },
-    {
       "id": "67dcbf51-1769-4f82-bed7-ba6f05fe1f8a",
       "name": "DIEGO PEREIRA FERINO MACEDO",
       "team": "Equipe D",
       "role": "SERVENTE"
-    },
-    {
-      "id": "5c5919b0-0a34-4f4b-870e-491888655d1c",
-      "name": "FRANCISCO NILTON QUEIROZ SILVA",
-      "team": "Equipe D",
-      "role": "SERVENTE"
-    },
-    {
-      "id": "ac174537-80fb-440a-9a7f-f85aebeac746",
-      "name": "JOSE BRUNO DE LIMA RAFAEL",
-      "team": "Equipe E",
-      "role": "PEDREIRO"
     },
     {
       "id": "b3db152c-00c8-45e9-9a13-c12bb8de22f9",
@@ -97,28 +73,10 @@
       "role": "PEDREIRO"
     },
     {
-      "id": "d8824312-7aa4-4b73-9e20-6ba9c81e6cfb",
-      "name": "FRANCISCO PAULO CARLOS DE SOUSA",
-      "team": "Equipe F",
-      "role": "PEDREIRO"
-    },
-    {
       "id": "c37af16a-6341-4c0b-870f-15b2f0e9036d",
       "name": "DIANEY BARBOSA PEIXOTO ",
       "team": "Equipe A",
       "role": "CARPINTEIRO"
-    },
-    {
-      "id": "814953f7-9e53-4574-9a82-8eb50825b5bb",
-      "name": "DIEGO PEREIRA FERINO MACEDO",
-      "team": "Equipe F",
-      "role": "SERVENTE"
-    },
-    {
-      "id": "b5fe7555-8dd9-4c8c-9662-623eb1a2c702",
-      "name": "CAIO BARROZO FERREIRA",
-      "team": "Equipe F",
-      "role": "SERVENTE"
     },
     {
       "id": "37b5d5dc-1b80-4a62-ad8e-14588b8db9dc",
@@ -145,12 +103,6 @@
       "role": "OPERADOR  DE BETONEIRA"
     },
     {
-      "id": "99902298-ad57-4c0a-9574-c877710885a4",
-      "name": "TALES VICTOR OLIVEIRA SILVA",
-      "team": "Equipe G",
-      "role": "SERVENTE"
-    },
-    {
       "id": "e7890100-09af-41b9-8302-d3962e5f08bd",
       "name": "CARLOS JOSE FERREIRA DA SILVA",
       "team": "Equipe G",
@@ -159,7 +111,7 @@
     {
       "id": "1aacfdf1-379f-4d73-a178-df30c4aa0b42",
       "name": "CICERO BATISTA DA SILVA",
-      "team": "Equipe H",
+      "team": "Equipe C",
       "role": "PEDREIRO"
     },
     {
@@ -175,22 +127,10 @@
       "role": "PEDREIRO"
     },
     {
-      "id": "690f52e7-94bd-4271-928d-cefd89ded847",
-      "name": "DIEGO PEREIRA MACEDO",
-      "team": "Equipe H",
-      "role": "SERVENTE"
-    },
-    {
       "id": "52c86fc7-ecfd-4823-b89e-88f60cdefc20",
       "name": "CLEILSON BARBOSA SILVA",
       "team": "Equipe A",
       "role": "CARPINTEIRO"
-    },
-    {
-      "id": "a77bc719-2e5c-4942-8e23-8bf7ddb9245f",
-      "name": "FRANCISCO DAS CHAGAS DE MACEDO",
-      "team": "Equipe A",
-      "role": "CAROINTEIRO"
     },
     {
       "id": "80fef54b-02fe-4399-b458-6f0302d64a9f",
@@ -209,6 +149,18 @@
       "name": "LUCIANO FERREIRA DA SILVA JUNIOR",
       "team": "Equipe A",
       "role": "SERVENTE"
+    },
+    {
+      "id": "611038b6-8ff5-49d1-98a3-9755ec160070",
+      "name": "FRANCISCO NILTAMAR QUEIROZ SILVA",
+      "team": "Equipe G",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "7a86ac5e-c75f-4d81-a6b9-9913462933f5",
+      "name": "IRISMAR GUSTAVO DA SILVA ",
+      "team": "Equipe A",
+      "role": "PEDREIRO"
     }
   ]
 }
