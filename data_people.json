@@ -9,7 +9,7 @@
     {
       "id": "3554a6dc-b911-436a-8f5b-d9883583ddb5",
       "name": "BRUNO DOS SANTOS ROCHA",
-      "team": "Equipe G",
+      "team": "Equipe A",
       "role": "SERVENTE"
     },
     {
@@ -39,7 +39,7 @@
     {
       "id": "e6f2db3c-e0c9-4362-9bf1-019ce998dee8",
       "name": "JACKSON SARAIVA DA SILVA",
-      "team": "Equipe B",
+      "team": "Equipe H",
       "role": "PEDREIRO"
     },
     {
@@ -51,7 +51,7 @@
     {
       "id": "ff87b833-bea5-4d08-8a96-47322ccdcbb0",
       "name": "CANDIDO MARTINS DE SOUSA",
-      "team": "Equipe C",
+      "team": "Equipe A",
       "role": "PEDREIRO"
     },
     {
@@ -87,13 +87,13 @@
     {
       "id": "b3db152c-00c8-45e9-9a13-c12bb8de22f9",
       "name": "LUCAS SILVA ALMEIDA ",
-      "team": "Equipe C",
+      "team": "Equipe A",
       "role": "SERVENTE"
     },
     {
       "id": "13361d53-5f9b-4f1d-919d-eb739d8c65a0",
       "name": "ANTONIO RAFAEL DE OLIVEIRA MACIEL ",
-      "team": "Equipe F",
+      "team": "Equipe A",
       "role": "PEDREIRO"
     },
     {
@@ -105,8 +105,8 @@
     {
       "id": "c37af16a-6341-4c0b-870f-15b2f0e9036d",
       "name": "DIANEY BARBOSA PEIXOTO ",
-      "team": "Equipe F",
-      "role": "PEDREIRO"
+      "team": "Equipe A",
+      "role": "CARPINTEIRO"
     },
     {
       "id": "814953f7-9e53-4574-9a82-8eb50825b5bb",
@@ -171,8 +171,44 @@
     {
       "id": "ccda4363-c3a8-4e95-9a31-0901c5d2a103",
       "name": "ADÃO DA SILVA LOPES",
-      "team": "Equipe H",
+      "team": "Equipe A",
       "role": "PEDREIRO"
+    },
+    {
+      "id": "690f52e7-94bd-4271-928d-cefd89ded847",
+      "name": "DIEGO PEREIRA MACEDO",
+      "team": "Equipe H",
+      "role": "SERVENTE"
+    },
+    {
+      "id": "52c86fc7-ecfd-4823-b89e-88f60cdefc20",
+      "name": "CLEILSON BARBOSA SILVA",
+      "team": "Equipe A",
+      "role": "CARPINTEIRO"
+    },
+    {
+      "id": "a77bc719-2e5c-4942-8e23-8bf7ddb9245f",
+      "name": "FRANCISCO DAS CHAGAS DE MACEDO",
+      "team": "Equipe A",
+      "role": "CAROINTEIRO"
+    },
+    {
+      "id": "80fef54b-02fe-4399-b458-6f0302d64a9f",
+      "name": "JOSE WILLIAM SABINO DE MARIA",
+      "team": "Equipe G",
+      "role": "FERREIRO ARMADOR"
+    },
+    {
+      "id": "fc7c42cd-f6dc-42a3-8a82-1b7c542df14a",
+      "name": "JOSE WELLIGTON MACIEL",
+      "team": "Equipe G",
+      "role": "FERREIRO ARMADOR"
+    },
+    {
+      "id": "70d62760-acd1-482c-90fe-69d94d237367",
+      "name": "LUCIANO FERREIRA DA SILVA JUNIOR",
+      "team": "Equipe A",
+      "role": "SERVENTE"
     }
   ]
 }
