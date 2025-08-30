@@ -1,4 +1,4 @@
-# PLANEJAMENTO_DE_OBRA.py (Versão Final Consolidada)
+# PLANEJAMENTO_DE_OBRA.py (Versão Final Consolidada e Revisada)
 import streamlit as st
 import json
 import os
@@ -83,7 +83,7 @@ def check_authentication():
                 else:
                     st.error("Chave de acesso inválida.")
 
-            if col2.form_submit_button("👁️ Continuar em modo de visualização", use_container_width=True):
+            if col2.form_submit_button("Continuar em modo de visualização", use_container_width=True):
                 st.session_state['user_role'] = 'viewer'
                 placeholder.empty()
                 st.rerun()
@@ -377,7 +377,7 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
             </div>
             
             <div class="section">
-                <h2>2. Cronograma Geral da Obra</h2>
+                <h2>2. Cronograma das Tarefas</h2>
                 <div class="chart">{gantt_chart_html}</div>
                 <p class="chart-desc">O Gráfico de Gantt ilustra a linha do tempo das atividades, permitindo visualizar a duração e a sobreposição das tarefas.</p>
             </div>
@@ -423,7 +423,7 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
                     </div>
                 </div>
                 <br>
-                <h3>Lista Geral de Funcionários</h3>
+                <h3>Lista Geral de Funcionários Por Atividade</h3>
                 <div class="personnel-list-container">
                     {personnel_list_html}
                 </div>
@@ -833,12 +833,23 @@ with tab3:
 
             if st.form_submit_button("➕ Adicionar Funcionário", use_container_width=True, disabled=not is_admin):
                 if all([emp_name, emp_role, emp_team]):
-                    new_employee = {"id": str(uuid.uuid4()), "name": emp_name, "team": emp_team, "role": emp_role}
-                    st.session_state.people.setdefault('employees', []).append(new_employee)
-                    DataManager.save(PEOPLE_FILE, st.session_state.people)
-                    add_activity("user", "Novo Colaborador", f"{emp_name} adicionado à equipe {emp_team}.")
-                    st.success(f"Funcionário {emp_name} cadastrado!")
-                    st.rerun()
+                    # NOVO: Lógica para verificar duplicidade
+                    employees = st.session_state.people.get('employees', [])
+                    # Normaliza o nome do novo funcionário (remove espaços e converte para minúsculo)
+                    normalized_new_name = emp_name.strip().lower()
+                    
+                    # Cria uma lista com os nomes existentes já normalizados
+                    existing_names = [e['name'].strip().lower() for e in employees]
+
+                    if normalized_new_name in existing_names:
+                        st.error(f"O funcionário '{emp_name.strip()}' já está cadastrado no sistema.")
+                    else:
+                        new_employee = {"id": str(uuid.uuid4()), "name": emp_name.strip(), "team": emp_team, "role": emp_role}
+                        st.session_state.people.setdefault('employees', []).append(new_employee)
+                        DataManager.save(PEOPLE_FILE, st.session_state.people)
+                        add_activity("user", "Novo Colaborador", f"{emp_name.strip()} adicionado à equipe {emp_team}.")
+                        st.success(f"Funcionário {emp_name.strip()} cadastrado!")
+                        st.rerun()
                 else:
                     st.error("Todos os campos são obrigatórios.")
 

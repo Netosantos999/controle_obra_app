@@ -39,7 +39,7 @@
     {
       "id": "603ef01d-76d2-4336-b485-e7697bac5eb2",
       "name": "JOSE EDILSON MESQUITA MOTA",
-      "team": "Equipe B",
+      "team": "Equipe A",
       "role": "PEDREIRO"
     },
     {
@@ -161,6 +161,12 @@
       "name": "IRISMAR GUSTAVO DA SILVA ",
       "team": "Equipe A",
       "role": "PEDREIRO"
+    },
+    {
+      "id": "c3f9c633-a2cd-4c99-90cb-d4ae14fd6d9a",
+      "name": "TALES VICTOR OLIVEIRA SILVA",
+      "team": "Equipe C",
+      "role": "SERVENTE"
     }
   ]
 }
