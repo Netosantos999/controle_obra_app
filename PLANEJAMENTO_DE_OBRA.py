@@ -130,12 +130,11 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
     # --- Pré-processamento e Cálculos Adicionais ---
     today = pd.to_datetime(date.today())
     
-    # Calcula dias de atraso ou dias restantes
     def calculate_due_days(row):
         if pd.isna(row['due_date']):
-            return None, 'secondary' # Sem prazo
+            return None, 'secondary'
         if row['status'] == 'Concluída':
-            return None, 'success' # Concluída
+            return None, 'success'
         
         delta = (row['due_date'] - today).days
         if delta < 0:
@@ -193,7 +192,6 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
         fig_due.update_layout(xaxis_title=None, yaxis_title="Nº de Tarefas", showlegend=False, font_family="Arial")
         due_chart_html = fig_due.to_html(full_html=False, include_plotlyjs='cdn')
 
-    # --- INÍCIO DOS NOVOS GRÁFICOS ---
     # Gráfico de Progresso por Setor
     progress_by_sector = filtered_df.groupby('sector')['progress'].mean().sort_values(ascending=False).reset_index()
     fig_sector_progress = px.bar(progress_by_sector, x='sector', y='progress', text='progress',
@@ -212,7 +210,6 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
                                text_auto=True)
     fig_teams_workload.update_layout(xaxis={'categoryorder':'total descending'}, yaxis_title="Nº de Tarefas", xaxis_title=None, font_family="Arial")
     teams_workload_chart_html = fig_teams_workload.to_html(full_html=False, include_plotlyjs='cdn')
-    # --- FIM DOS NOVOS GRÁFICOS ---
 
     # Gráfico de Gantt (Cronograma)
     gantt_chart_html = "<p>Nenhuma tarefa com datas válidas para gerar o cronograma.</p>"
@@ -220,21 +217,29 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
     df_gantt.rename(columns={'name': 'Task', 'created_at': 'Start', 'due_date': 'Finish', 'team': 'Resource'}, inplace=True)
     df_gantt.dropna(subset=['Start', 'Finish'], inplace=True)
     if not df_gantt.empty:
+        num_tasks = len(df_gantt)
+        chart_height = max(400, num_tasks * 35 + 100)
+        
         unique_teams = df_gantt['Resource'].unique()
         color_palette = px.colors.qualitative.Plotly 
         team_color_map = {team: color_palette[i % len(color_palette)] for i, team in enumerate(unique_teams)}
+        
         fig_gantt = px.timeline(df_gantt, x_start="Start", x_end="Finish", y="Task", color="Resource", title="Cronograma da Obra",
-                                color_discrete_map=team_color_map)
+                                color_discrete_map=team_color_map,
+                                height=chart_height)
+                                
         fig_gantt.update_yaxes(autorange="reversed", title=None)
         fig_gantt.update_xaxes(title="Linha do Tempo")
+        
+        # Aumenta a margem esquerda para garantir que nomes longos de tarefas sejam exibidos
+        fig_gantt.update_layout(margin=dict(l=350)) 
+        
         fig_gantt.add_shape(type='line', x0=datetime.now(), y0=0, x1=datetime.now(), y1=1, yref='paper', line=dict(color='#dc3545', width=2, dash='dash'))
         fig_gantt.add_annotation(x=datetime.now(), y=1.05, yref='paper', showarrow=False, text="Hoje", font=dict(color="#dc3545"))
         gantt_chart_html = fig_gantt.to_html(full_html=False, include_plotlyjs='cdn')
 
 
     # --- Geração de Tabelas (convertidas para HTML) ---
-    
-    # Tabela de Tarefas Detalhada com Estilos
     df_display = filtered_df[['name', 'team', 'sector', 'status', 'progress', 'due_date', 'due_days_text', 'due_days_color']].copy()
     df_display.rename(columns={'name': 'Tarefa', 'team': 'Equipe', 'sector': 'Setor', 'status': 'Status', 'progress': 'Progresso', 'due_date': 'Vencimento'}, inplace=True)
     df_display['Vencimento'] = df_display['Vencimento'].dt.strftime('%d/%m/%Y')
@@ -267,24 +272,19 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
     team_summary_html = "<p>Nenhuma equipe para exibir.</p>"
     personnel_list_html = "<p>Nenhum funcionário para exibir.</p>"
     if not personnel_df.empty:
-        # Tabela de resumo de colaboradores por equipe
         team_counts = personnel_df['team'].value_counts().reset_index()
         team_counts.columns = ['Equipe', 'Nº de Colaboradores']
         team_summary_html = team_counts.to_html(index=False, border=0, classes='dataframe')
         
-        # Agrupa as tarefas por equipe, criando uma lista em HTML para cada
         tasks_by_team = filtered_df.groupby('team')['name'].apply(lambda x: '<br>'.join(x)).reset_index()
         tasks_by_team.rename(columns={'name': 'Tarefa(s) da Equipe'}, inplace=True)
 
-        # Junta os dados de funcionários com as tarefas de suas equipes
         enriched_personnel_df = pd.merge(personnel_df, tasks_by_team, on='team', how='left')
         enriched_personnel_df['Tarefa(s) da Equipe'].fillna('Nenhuma tarefa atribuída à equipe', inplace=True)
         
-        # Prepara o DataFrame final para exibição
         df_people_display = enriched_personnel_df[['name', 'team', 'role', 'Tarefa(s) da Equipe']].copy().sort_values(by=['team', 'name'])
         df_people_display.rename(columns={'name': 'Nome', 'team': 'Equipe', 'role': 'Função'}, inplace=True)
         
-        # Converte o DataFrame para HTML, permitindo a renderização de tags como <br>
         personnel_list_html = df_people_display.to_html(index=False, border=0, classes='dataframe', escape=False)
 
 
@@ -346,8 +346,8 @@ def generate_report_html(filtered_df, personnel_df, project_goals, filters):
                 }}
                 .no-print {{ display: none; }}
                 body {{
-                    -webkit-print-color-adjust: exact !important; /* For Chrome/Safari */
-                    print-color-adjust: exact !important; /* Standard property for other browsers */
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
                 }}
             }}
         </style>
@@ -472,7 +472,6 @@ def initialize_state():
         tasks_data = DataManager.load(TASKS_FILE, [])
         st.session_state.activities = DataManager.load(ACTIVITIES_FILE, [])
 
-        # Pré-processamento e sanitização dos dados
         for team in st.session_state.config.get("teams", []):
             team['name'] = team['name'].strip()
         for sector in st.session_state.config.get("sectors", []):
@@ -483,15 +482,13 @@ def initialize_state():
                 task['id'] = str(uuid.uuid4())
             task['status'] = get_task_status(task)
         
-        # Converte os dados de tarefas em um DataFrame do Pandas
         df_tasks = pd.DataFrame(tasks_data)
         if not df_tasks.empty:
-            # Converte colunas de data para datetime, tratando erros
             df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
             df_tasks['due_date'] = pd.to_datetime(df_tasks['due_date'], errors='coerce')
         
         st.session_state.tasks_df = df_tasks
-        st.session_state.tasks = tasks_data # Mantém a lista original para salvar em JSON
+        st.session_state.tasks = tasks_data
         st.session_state.initialized = True
 
 
@@ -572,7 +569,6 @@ with st.sidebar:
 # --- PÁGINA PRINCIPAL ---
 # =================================================================================
 st.header("Painel de Acompanhamento de Obra")
-# Abas da aplicação
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Dashboard",
     "📋 Gestão de Tarefas",
@@ -591,7 +587,6 @@ with tab1:
     else:
         df_tasks = st.session_state.tasks_df
         
-        # --- MÉTRICAS PRINCIPAIS ---
         total_tasks = len(df_tasks)
         completed_tasks = len(df_tasks[df_tasks['status'] == 'Concluída'])
         pending_tasks = total_tasks - completed_tasks
@@ -604,7 +599,6 @@ with tab1:
         col4.metric("Tarefas Pendentes", pending_tasks)
         st.divider()
 
-        # --- GRÁFICOS DE DESEMPENHO ---
         st.subheader("Indicadores de Desempenho")
         col_chart1, col_chart2 = st.columns(2)
 
@@ -677,7 +671,9 @@ with tab1:
                 fig_gantt.update_yaxes(autorange="reversed", title=None)
                 fig_gantt.update_xaxes(title="Linha do Tempo")
                 
-                # Adiciona linha vertical para o dia de hoje
+                # Aumenta a margem esquerda para garantir que nomes longos de tarefas sejam exibidos
+                fig_gantt.update_layout(margin=dict(l=350))
+
                 fig_gantt.add_shape(type='line',
                                   x0=datetime.now(), y0=0,
                                   x1=datetime.now(), y1=1,
@@ -727,7 +723,6 @@ with tab2:
     st.divider()
     st.subheader("Lista de Tarefas")
 
-    # Filtros e Busca
     col_filter1, col_filter2, col_filter3 = st.columns(3)
     filter_team = col_filter1.multiselect("Filtrar por Equipe", available_teams, placeholder="Todas as equipes")
     filter_sector = col_filter2.multiselect("Filtrar por Setor", available_sectors, placeholder="Todos os setores")
@@ -833,12 +828,9 @@ with tab3:
 
             if st.form_submit_button("➕ Adicionar Funcionário", use_container_width=True, disabled=not is_admin):
                 if all([emp_name, emp_role, emp_team]):
-                    # NOVO: Lógica para verificar duplicidade
                     employees = st.session_state.people.get('employees', [])
-                    # Normaliza o nome do novo funcionário (remove espaços e converte para minúsculo)
                     normalized_new_name = emp_name.strip().lower()
                     
-                    # Cria uma lista com os nomes existentes já normalizados
                     existing_names = [e['name'].strip().lower() for e in employees]
 
                     if normalized_new_name in existing_names:
@@ -946,7 +938,6 @@ with tab4:
                                     task['sector'] = new_name
                             save_tasks_state()
                             
-                            # Força a recriação do DataFrame para consistência
                             df_tasks = pd.DataFrame(st.session_state.tasks)
                             if not df_tasks.empty:
                                 df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
@@ -1003,7 +994,6 @@ with tab4:
                                     emp['team'] = new_name
                             DataManager.save(PEOPLE_FILE, st.session_state.people)
 
-                            # Força a recriação do DataFrame para consistência
                             df_tasks = pd.DataFrame(st.session_state.tasks)
                             if not df_tasks.empty:
                                 df_tasks['created_at'] = pd.to_datetime(df_tasks['created_at'], errors='coerce')
@@ -1030,7 +1020,6 @@ with tab5:
     if 'report_html' not in st.session_state:
         st.session_state.report_html = None
 
-    # --- PAINEL DE FILTROS ---
     st.markdown("Selecione os filtros desejados para gerar um relatório detalhado e profissional.")
     if not st.session_state.tasks:
         st.info("Nenhuma tarefa cadastrada para gerar relatórios.")
@@ -1049,7 +1038,6 @@ with tab5:
             selected_status = col_filter3.selectbox("Filtrar por Status:", all_statuses, key="report_status_filter")
 
         if st.button("📄 Gerar Relatório", use_container_width=True, type="primary"):
-            # --- LÓGICA DE FILTRAGEM OTIMIZADA ---
             query = []
             if selected_team != "Todas":
                 query.append(f"team == '{selected_team}'")
@@ -1069,12 +1057,10 @@ with tab5:
                 df_people = pd.DataFrame(st.session_state.people.get('employees', []))
                 st.session_state.report_html = generate_report_html(filtered_report_tasks, df_people, project_goals, filters)
 
-    # --- EXIBIÇÃO DO RELATÓRIO ---
     if st.session_state.report_html:
         st.divider()
         st.markdown("#### **2. Pré-visualização e Download**")
 
-        # Botão de Download
         st.download_button(
             label="📥 Baixar Relatório em HTML",
             data=st.session_state.report_html,
@@ -1083,6 +1069,5 @@ with tab5:
             use_container_width=True
         )
 
-        # Pré-visualização
         with st.container(height=600, border=True):
             st.components.v1.html(st.session_state.report_html, height=600, scrolling=True)

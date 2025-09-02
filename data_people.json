@@ -33,7 +33,7 @@
     {
       "id": "e6f2db3c-e0c9-4362-9bf1-019ce998dee8",
       "name": "JACKSON SARAIVA DA SILVA",
-      "team": "Equipe H",
+      "team": "Equipe A",
       "role": "PEDREIRO"
     },
     {
@@ -57,7 +57,7 @@
     {
       "id": "67dcbf51-1769-4f82-bed7-ba6f05fe1f8a",
       "name": "DIEGO PEREIRA FERINO MACEDO",
-      "team": "Equipe D",
+      "team": "Equipe G",
       "role": "SERVENTE"
     },
     {
@@ -117,7 +117,7 @@
     {
       "id": "d1ddc0ab-4d37-4bd8-8d3c-062890ebfba5",
       "name": "ANTONIO ELAIRTO DA SILVA",
-      "team": "Equipe H",
+      "team": "Equipe A",
       "role": "SERVENTE"
     },
     {
@@ -153,7 +153,7 @@
     {
       "id": "611038b6-8ff5-49d1-98a3-9755ec160070",
       "name": "FRANCISCO NILTAMAR QUEIROZ SILVA",
-      "team": "Equipe G",
+      "team": "Equipe H",
       "role": "SERVENTE"
     },
     {
@@ -165,8 +165,50 @@
     {
       "id": "c3f9c633-a2cd-4c99-90cb-d4ae14fd6d9a",
       "name": "TALES VICTOR OLIVEIRA SILVA",
-      "team": "Equipe C",
+      "team": "Equipe H",
       "role": "SERVENTE"
+    },
+    {
+      "id": "ebb2caf3-9358-4129-b460-0642eca2e477",
+      "name": "X-XXXXXXXXXXXXXXXXX",
+      "team": "Equipe D",
+      "role": "MONTADOR ELETROMECÂNICO"
+    },
+    {
+      "id": "9e57c77f-a21d-47f9-848f-2aadc7a06710",
+      "name": "XX-XXXXXXXXXXXXXXXX",
+      "team": "Equipe D",
+      "role": "OPERADOR DE MUNCK"
+    },
+    {
+      "id": "12ccfac8-0b21-4b79-8e44-afdec4bd7199",
+      "name": "ANTÔNIO MARCOS MOREIRA DA SILVA",
+      "team": "Equipe C",
+      "role": "OPERADOR DE RETRO"
+    },
+    {
+      "id": "58e9ab06-f954-40e8-b26b-f81459ae6127",
+      "name": "FRANCISCO VELMAR LIMA DE OLIVEIRA",
+      "team": "Equipe C",
+      "role": "OPERADOR DE RETRO"
+    },
+    {
+      "id": "0eb909b6-b4db-4efe-abf4-64eac5a4c680",
+      "name": "XXX-XXXXXXXXXXXXXXX",
+      "team": "Equipe D",
+      "role": "MONTADOR ELETROMECÂNICO"
+    },
+    {
+      "id": "98eed022-e8ae-4c82-9bdd-89eda65f22b9",
+      "name": "XXX-XXXXXXXXXXXXXXX",
+      "team": "Equipe D",
+      "role": "MONTADOR ELETROMECÂNICO"
+    },
+    {
+      "id": "ef5fe7ec-26a9-4596-ab2f-b6f9eab4b795",
+      "name": "XXXX-XXXXXXXXXXXXXX",
+      "team": "Equipe D",
+      "role": "ENCARREGADO ELETROMECÂNICO"
     }
   ]
 }
