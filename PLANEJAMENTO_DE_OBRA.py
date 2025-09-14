@@ -569,12 +569,13 @@ with st.sidebar:
 # --- PÁGINA PRINCIPAL ---
 # =================================================================================
 st.header("Painel de Acompanhamento de Obra")
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📊 Dashboard",
     "📋 Gestão de Tarefas",
     "👷 Gestão de Pessoal",
     "⚙️ Gestão de Configurações",
-    "📈 Relatórios Detalhados"
+    "📈 Relatórios Detalhados",
+    "🏗️ Análise Estrutural"
 ])
 
 # =================================================================================
@@ -1071,3 +1072,137 @@ with tab5:
 
         with st.container(height=600, border=True):
             st.components.v1.html(st.session_state.report_html, height=600, scrolling=True)
+
+# =================================================================================
+# --- ABA 6: ANÁLISE ESTRUTURAL ---
+# =================================================================================
+with tab6:
+    st.subheader("Análise Estrutural da Obra")
+
+    # --- 1. ORGANOGRAMA ---
+    st.markdown("#### Organograma da Obra")
+    df_people_org = pd.DataFrame(st.session_state.people.get('employees', []))
+    if df_people_org.empty:
+        st.info("Nenhum funcionário cadastrado para gerar o organograma.")
+    else:
+        # Adiciona um nó raiz para a obra
+        project_name = "Projeto Obra"
+        df_people_org['parent'] = df_people_org['team']
+        
+        # Cria nós para as equipes
+        teams_nodes = pd.DataFrame({
+            'id': df_people_org['team'].unique(),
+            'parent': project_name,
+            'name': df_people_org['team'].unique()
+        })
+        
+        # Cria nós para os funcionários
+        people_nodes = pd.DataFrame({
+            'id': df_people_org['id'],
+            'parent': df_people_org['parent'],
+            'name': df_people_org['name'] + " (" + df_people_org['role'] + ")"
+        })
+        
+        # Adiciona o nó raiz
+        root_node = pd.DataFrame([{'id': project_name, 'parent': '', 'name': project_name}])
+        
+        # Concatena todos os nós
+        df_org_chart = pd.concat([root_node, teams_nodes, people_nodes], ignore_index=True)
+
+        fig_org = go.Figure(go.Treemap(
+            ids=df_org_chart['id'],
+            labels=df_org_chart['name'],
+            parents=df_org_chart['parent'],
+            root_color="lightgrey"
+        ))
+        fig_org.update_layout(margin=dict(t=50, l=25, r=25, b=25))
+        st.plotly_chart(fig_org, use_container_width=True)
+
+    st.divider()
+
+    # --- 2. FLUXOGRAMA DE TAREFAS (SANKEY) ---
+    st.markdown("#### Fluxograma de Tarefas (Setor -> Equipe -> Status)")
+    df_tasks_sankey = st.session_state.tasks_df
+    if df_tasks_sankey.empty:
+        st.info("Nenhuma tarefa cadastrada para gerar o fluxograma.")
+    else:
+        all_nodes = list(pd.concat([
+            df_tasks_sankey['sector'], 
+            df_tasks_sankey['team'], 
+            df_tasks_sankey['status']
+        ]).unique())
+        
+        sankey_data = df_tasks_sankey.groupby(['sector', 'team', 'status']).size().reset_index(name='value')
+        
+        source_indices = []
+        target_indices = []
+        values = []
+        
+        # Fluxo: Setor -> Equipe
+        sector_team_flow = sankey_data.groupby(['sector', 'team'])['value'].sum().reset_index()
+        for _, row in sector_team_flow.iterrows():
+            source_indices.append(all_nodes.index(row['sector']))
+            target_indices.append(all_nodes.index(row['team']))
+            values.append(row['value'])
+            
+        # Fluxo: Equipe -> Status
+        team_status_flow = sankey_data.groupby(['team', 'status'])['value'].sum().reset_index()
+        for _, row in team_status_flow.iterrows():
+            source_indices.append(all_nodes.index(row['team']))
+            target_indices.append(all_nodes.index(row['status']))
+            values.append(row['value'])
+
+        fig_sankey = go.Figure(data=[go.Sankey(
+            node=dict(
+                pad=15,
+                thickness=20,
+                line=dict(color="black", width=0.5),
+                label=all_nodes,
+            ),
+            link=dict(
+                source=source_indices,
+                target=target_indices,
+                value=values
+            ))])
+
+        fig_sankey.update_layout(title_text="Fluxo de Tarefas: Setor -> Equipe -> Status", font_size=10)
+        st.plotly_chart(fig_sankey, use_container_width=True)
+        
+    st.divider()
+
+    # --- 3. RELATÓRIO DE FISCALIZAÇÃO ---
+    st.markdown("#### Relatório Rápido de Fiscalização")
+    if df_tasks.empty:
+        st.info("Nenhuma tarefa para gerar o relatório de fiscalização.")
+    else:
+        today = pd.to_datetime(date.today())
+        overdue_tasks_df = df_tasks[(df_tasks['due_date'] < today) & (df_tasks['status'] != 'Concluída')]
+        
+        report_content = f"""
+        # Relatório de Fiscalização da Obra
+        **Data de Emissão:** {datetime.now().strftime('%d/%m/%Y %H:%M')}
+
+        ## 1. Resumo Geral
+        - **Total de Tarefas:** {len(df_tasks)}
+        - **Progresso Médio Geral:** {df_tasks['progress'].mean():.2f}%
+        - **Tarefas Concluídas:** {len(df_tasks[df_tasks['status'] == 'Concluída'])}
+        - **Tarefas em Andamento:** {len(df_tasks[df_tasks['status'] == 'Em Andamento'])}
+        - **Tarefas Planejadas:** {len(df_tasks[df_tasks['status'] == 'Planejada'])}
+        - **Tarefas Atrasadas:** {len(overdue_tasks_df)}
+
+        ## 2. Detalhamento de Tarefas Atrasadas
+        """
+        if not overdue_tasks_df.empty:
+            for _, task in overdue_tasks_df.iterrows():
+                report_content += f"- **Tarefa:** {task['name']} | **Equipe:** {task['team']} | **Vencimento:** {task['due_date'].strftime('%d/%m/%Y')}\\n"
+        else:
+            report_content += "Nenhuma tarefa atrasada no momento.\\n"
+            
+        st.markdown(report_content)
+        
+        st.download_button(
+            label="📥 Baixar Relatório de Fiscalização",
+            data=report_content,
+            file_name=f"relatorio_fiscalizacao_{datetime.now().strftime('%Y%m%d')}.md",
+            mime="text/markdown"
+        )

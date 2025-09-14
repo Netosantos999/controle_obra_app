@@ -1,0 +1,17 @@
+Falando em Planejamento, trabalharemos com as seguintes frentes em subdivisão do todo:
+*Setor 1* = área de 69kv 
+*Setor 2* = área de 13kv
+*Setor 3* = áreas remanescentes
+*Setor 4* = Casa de Comando
+*Setor 5* = Arrimo
+*Setor 6* = SOP
+*Setor 7* = Complementares (urbanismo, muros, CFTV, etc)
+
+Temos que montra as equipes:
+*Equipe A* = Arrimo
+*Equipe B* = Postes (perfuração, base de fundo, manilhas)
+*Equipe C* = Canaletas e Tubulações Elétricas Externas
+*Equipe D* = Drenagem/Sanitário e Canaleta Casa de Comando
+*Equipe F* = Casa de Comando
+
+Objetivo de separar por área é executarmos tudo que tiver para ser feito dentro desta área: postes, canaletas, tubulações, drenagem... isso devemos criar plantas iluminadas por cada Frente com os serviços numerados de cada Equipe e o planejamento diário/semana da execução da equipe...
