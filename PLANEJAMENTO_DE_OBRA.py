@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import uuid
 import io
 import zipfile
+import re
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -90,6 +91,197 @@ def check_authentication():
         return False
 
     return True
+
+
+# --- FUNÇÕES DE GERAÇÃO DE DIAGRAMAS (MERMAID) ---
+
+def generate_org_chart_mermaid_syntax(employees, tasks):
+    """Gera a sintaxe Mermaid para o organograma, enriquecida com dados de performance."""
+    if not employees:
+        return "graph LR\n    A[Nenhum funcionário cadastrado]"
+
+    # Agrupa funcionários e calcula performance por equipe
+    teams = {}
+    for emp in employees:
+        team_name = emp.get('team', 'Sem Equipe')
+        if team_name not in teams:
+            teams[team_name] = {'members': [], 'total_progress': 0, 'task_count': 0, 'overdue_count': 0}
+        teams[team_name]['members'].append(emp)
+
+    today = datetime.now().date()
+    for task in tasks:
+        team_name = task.get('team')
+        if team_name in teams:
+            teams[team_name]['task_count'] += 1
+            teams[team_name]['total_progress'] += task.get('progress', 0)
+            due_date = task.get('due_date')
+            if due_date and datetime.strptime(due_date, "%Y-%m-%d").date() < today and task.get('status') != 'Concluída':
+                teams[team_name]['overdue_count'] += 1
+
+    def safe_id(text, prefix=''):
+        return prefix + re.sub(r'[^a-zA-Z0-9]', '', text)
+
+    mermaid_string = "graph TD\n"
+    mermaid_string += '    ENG_CIVIL["Engenheiro Civil"]\n'
+    mermaid_string += '    ENC_CIVIL["Encarregado Civil"]\n'
+    mermaid_string += '    TEC_SEG["Técnico de Seg. do Trabalho"]\n'
+    mermaid_string += '    ENG_CIVIL --> ENC_CIVIL\n'
+    mermaid_string += '    ENC_CIVIL --> TEC_SEG\n\n'
+    style_definitions = ""
+
+    for team_name, data in teams.items():
+        team_id = safe_id(team_name, 'T')
+        avg_progress = (data['total_progress'] / data['task_count']) if data['task_count'] > 0 else 0
+        
+        # Define a cor da equipe com base na performance
+        color = "#b3b3b3" # Cinza (padrão, sem tarefas)
+        if data['task_count'] > 0:
+            if data['overdue_count'] > 0:
+                color = "#ffcdd2" # Vermelho claro para atraso
+            elif avg_progress > 70:
+                color = "#c8e6c9" # Verde claro
+            elif avg_progress > 30:
+                color = "#fff9c4" # Amarelo claro
+            else:
+                color = "#ffecb3" # Laranja claro
+
+        team_label = f'"{team_name}<br><b>{avg_progress:.1f}% Concluído</b><br><i>{data["task_count"]} tarefas</i>"'
+        mermaid_string += f'    ENC_CIVIL --> {team_id}({team_label})\n'
+        style_definitions += f"    style {team_id} fill:{color},stroke:#333,stroke-width:2px\n"
+
+        for member in data['members']:
+            member_id = safe_id(member['id'], 'P')
+            member_name = member.get('name', 'Sem Nome')
+            member_role = member.get('role', 'Sem Função')
+            mermaid_string += f'    {team_id} --> {member_id}["{member_name}<br><i>({member_role})</i>"]\n'
+    
+    style_definitions += "    style ENG_CIVIL fill:#d1e7dd,stroke:#0f5132,stroke-width:2px\n"
+    style_definitions += "    style ENC_CIVIL fill:#e9ecef,stroke:#343a40,stroke-width:2px\n"
+    style_definitions += "    style TEC_SEG fill:#e9ecef,stroke:#343a40,stroke-width:2px\n"
+    mermaid_string += "\n" + style_definitions
+    return mermaid_string
+
+def generate_flowchart_mermaid_syntax(tasks):
+    """Gera a sintaxe Mermaid para o fluxograma de tarefas, com status e prazos."""
+    if not tasks:
+        return "flowchart TD\n    A[Nenhuma tarefa cadastrada]"
+
+    sorted_tasks = sorted(tasks, key=lambda x: x.get('created_at', ''))
+    mermaid_string = "flowchart TD\n"
+    style_definitions = ""
+    
+    def safe_id(text, prefix=''):
+        return prefix + re.sub(r'[^a-zA-Z0-9]', '', text)
+
+    mermaid_string += '    Start([Início da Obra])\n'
+    style_definitions += "    style Start fill:#d4edda,stroke:#155724,stroke-width:2px\n"
+    
+    last_node_id = "Start"
+    today = datetime.now().date()
+
+    for task in sorted_tasks:
+        task_id = safe_id(task['id'], 'TASK')
+        task_name = task.get('name', 'Tarefa sem nome').replace('"', '')
+        team_name = task.get('team', 'Sem equipe').replace('"', '')
+        status = task.get('status', 'Planejada')
+        progress = task.get('progress', 0)
+        due_date_str = task.get('due_date')
+        
+        # Informações de prazo
+        prazo_info = ""
+        color = "#e9ecef" # Cinza (Planejada)
+        
+        if status == 'Concluída':
+            color = "#c8e6c9" # Verde
+            prazo_info = "Concluída"
+        elif status == 'Em Andamento':
+            color = "#fff9c4" # Amarelo
+            if due_date_str:
+                due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
+                if due_date < today:
+                    color = "#ffcdd2" # Vermelho (Atrasada)
+                    prazo_info = f"Atrasada! (Venceu em {due_date.strftime('%d/%m')})"
+                else:
+                    prazo_info = f"Vence em {due_date.strftime('%d/%m')}"
+        
+        task_label = f'"{task_name}<br><b>{progress}%</b> - <i>{team_name}</i><br><small>{prazo_info}</small>"'
+        
+        mermaid_string += f'    {task_id}({task_label})\n'
+        mermaid_string += f"    {last_node_id} --> {task_id}\n"
+        style_definitions += f"    style {task_id} fill:{color},stroke:#333,stroke-width:2px\n"
+        last_node_id = task_id
+
+    mermaid_string += '    End([Conclusão da Obra])\n'
+    style_definitions += "    style End fill:#d4edda,stroke:#155724,stroke-width:2px\n"
+    mermaid_string += f"    {last_node_id} --> End\n"
+    
+    mermaid_string += "\n" + style_definitions
+    return mermaid_string
+
+def create_printable_diagram_html(title, mermaid_syntax, orientation='landscape'):
+    """Cria um arquivo HTML completo com um diagrama Mermaid, otimizado para impressão."""
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{title}</title>
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+        <script>
+            mermaid.initialize({{
+                startOnLoad: true,
+                theme: 'default',
+                flowchart: {{ useMaxWidth: false, htmlLabels: true }},
+                graph: {{ useMaxWidth: false, htmlLabels: true }}
+            }});
+        </script>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                margin: 0;
+            }}
+            h1 {{
+                text-align: center;
+                margin-top: 20px;
+                margin-bottom: 10px;
+            }}
+            .mermaid {{
+                display: block;
+                width: 100%;
+                text-align: center;
+            }}
+            /* Estilos para Impressão */
+            @media print {{
+                @page {{
+                    size: A4 {orientation};
+                    margin: 1cm;
+                }}
+                body {{
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                    justify-content: flex-start;
+                }}
+                h1 {{
+                    font-size: 16pt;
+                }}
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>{title}</h1>
+        <div class="mermaid">
+{mermaid_syntax}
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
 
 
 # --- FUNÇÕES DE LÓGICA DE NEGÓCIO E UI ---
@@ -1077,132 +1269,77 @@ with tab5:
 # --- ABA 6: ANÁLISE ESTRUTURAL ---
 # =================================================================================
 with tab6:
-    st.subheader("Análise Estrutural da Obra")
-
-    # --- 1. ORGANOGRAMA ---
-    st.markdown("#### Organograma da Obra")
-    df_people_org = pd.DataFrame(st.session_state.people.get('employees', []))
-    if df_people_org.empty:
-        st.info("Nenhum funcionário cadastrado para gerar o organograma.")
-    else:
-        # Adiciona um nó raiz para a obra
-        project_name = "Projeto Obra"
-        df_people_org['parent'] = df_people_org['team']
-        
-        # Cria nós para as equipes
-        teams_nodes = pd.DataFrame({
-            'id': df_people_org['team'].unique(),
-            'parent': project_name,
-            'name': df_people_org['team'].unique()
-        })
-        
-        # Cria nós para os funcionários
-        people_nodes = pd.DataFrame({
-            'id': df_people_org['id'],
-            'parent': df_people_org['parent'],
-            'name': df_people_org['name'] + " (" + df_people_org['role'] + ")"
-        })
-        
-        # Adiciona o nó raiz
-        root_node = pd.DataFrame([{'id': project_name, 'parent': '', 'name': project_name}])
-        
-        # Concatena todos os nós
-        df_org_chart = pd.concat([root_node, teams_nodes, people_nodes], ignore_index=True)
-
-        fig_org = go.Figure(go.Treemap(
-            ids=df_org_chart['id'],
-            labels=df_org_chart['name'],
-            parents=df_org_chart['parent'],
-            root_color="lightgrey"
-        ))
-        fig_org.update_layout(margin=dict(t=50, l=25, r=25, b=25))
-        st.plotly_chart(fig_org, use_container_width=True)
-
+    st.subheader("Geração de Diagramas da Obra")
+    st.markdown("Use os botões abaixo para gerar e baixar o Organograma e o Fluxograma da obra em formato HTML, prontos para impressão.")
+    
+    orientation = st.radio(
+        "Orientação de Impressão",
+        ["Paisagem", "Retrato"],
+        index=0,
+        horizontal=True,
+        help="Escolha como a página será orientada ao imprimir."
+    )
     st.divider()
 
-    # --- 2. FLUXOGRAMA DE TAREFAS (SANKEY) ---
-    st.markdown("#### Fluxograma de Tarefas (Setor -> Equipe -> Status)")
-    df_tasks_sankey = st.session_state.tasks_df
-    if df_tasks_sankey.empty:
-        st.info("Nenhuma tarefa cadastrada para gerar o fluxograma.")
-    else:
-        all_nodes = list(pd.concat([
-            df_tasks_sankey['sector'], 
-            df_tasks_sankey['team'], 
-            df_tasks_sankey['status']
-        ]).unique())
-        
-        sankey_data = df_tasks_sankey.groupby(['sector', 'team', 'status']).size().reset_index(name='value')
-        
-        source_indices = []
-        target_indices = []
-        values = []
-        
-        # Fluxo: Setor -> Equipe
-        sector_team_flow = sankey_data.groupby(['sector', 'team'])['value'].sum().reset_index()
-        for _, row in sector_team_flow.iterrows():
-            source_indices.append(all_nodes.index(row['sector']))
-            target_indices.append(all_nodes.index(row['team']))
-            values.append(row['value'])
-            
-        # Fluxo: Equipe -> Status
-        team_status_flow = sankey_data.groupby(['team', 'status'])['value'].sum().reset_index()
-        for _, row in team_status_flow.iterrows():
-            source_indices.append(all_nodes.index(row['team']))
-            target_indices.append(all_nodes.index(row['status']))
-            values.append(row['value'])
+    col1, col2 = st.columns(2)
 
-        fig_sankey = go.Figure(data=[go.Sankey(
-            node=dict(
-                pad=15,
-                thickness=20,
-                line=dict(color="black", width=0.5),
-                label=all_nodes,
-            ),
-            link=dict(
-                source=source_indices,
-                target=target_indices,
-                value=values
-            ))])
+    with col1:
+        st.markdown("##### Organograma Estrutural")
+        # Botão para gerar o Organograma
+        if st.button("📊 Gerar Organograma", use_container_width=True):
+            employees = st.session_state.people.get('employees', [])
+            tasks = st.session_state.get('tasks', [])
+            if employees:
+                org_chart_syntax = generate_org_chart_mermaid_syntax(employees, tasks)
+                st.session_state.org_chart_html = create_printable_diagram_html(
+                    "Organograma - Estrutura Hierárquica da Obra",
+                    org_chart_syntax,
+                    orientation.lower()
+                )
+                st.toast("Organograma gerado com sucesso!")
+            else:
+                st.warning("Nenhum funcionário cadastrado para gerar o organograma.")
+                st.session_state.org_chart_html = None
 
-        fig_sankey.update_layout(title_text="Fluxo de Tarefas: Setor -> Equipe -> Status", font_size=10)
-        st.plotly_chart(fig_sankey, use_container_width=True)
-        
-    st.divider()
+        # Botão de download e pré-visualização para o Organograma
+        if 'org_chart_html' in st.session_state and st.session_state.org_chart_html:
+            st.download_button(
+                label="📥 Baixar Organograma (.html)",
+                data=st.session_state.org_chart_html,
+                file_name="organograma_obra.html",
+                mime="text/html",
+                use_container_width=True
+            )
+            st.markdown("###### Pré-visualização:")
+            with st.container(height=400, border=True):
+                st.components.v1.html(st.session_state.org_chart_html, height=400, scrolling=True)
 
-    # --- 3. RELATÓRIO DE FISCALIZAÇÃO ---
-    st.markdown("#### Relatório Rápido de Fiscalização")
-    if df_tasks.empty:
-        st.info("Nenhuma tarefa para gerar o relatório de fiscalização.")
-    else:
-        today = pd.to_datetime(date.today())
-        overdue_tasks_df = df_tasks[(df_tasks['due_date'] < today) & (df_tasks['status'] != 'Concluída')]
-        
-        report_content = f"""
-        # Relatório de Fiscalização da Obra
-        **Data de Emissão:** {datetime.now().strftime('%d/%m/%Y %H:%M')}
+    with col2:
+        st.markdown("##### Fluxograma de Atividades")
+        # Botão para gerar o Fluxograma
+        if st.button("🌊 Gerar Fluxograma", use_container_width=True):
+            tasks = st.session_state.get('tasks', [])
+            if tasks:
+                flowchart_syntax = generate_flowchart_mermaid_syntax(tasks)
+                st.session_state.flowchart_html = create_printable_diagram_html(
+                    "Fluxograma - Sequência de Atividades da Obra",
+                    flowchart_syntax,
+                    orientation.lower()
+                )
+                st.toast("Fluxograma gerado com sucesso!")
+            else:
+                st.warning("Nenhuma tarefa cadastrada para gerar o fluxograma.")
+                st.session_state.flowchart_html = None
 
-        ## 1. Resumo Geral
-        - **Total de Tarefas:** {len(df_tasks)}
-        - **Progresso Médio Geral:** {df_tasks['progress'].mean():.2f}%
-        - **Tarefas Concluídas:** {len(df_tasks[df_tasks['status'] == 'Concluída'])}
-        - **Tarefas em Andamento:** {len(df_tasks[df_tasks['status'] == 'Em Andamento'])}
-        - **Tarefas Planejadas:** {len(df_tasks[df_tasks['status'] == 'Planejada'])}
-        - **Tarefas Atrasadas:** {len(overdue_tasks_df)}
-
-        ## 2. Detalhamento de Tarefas Atrasadas
-        """
-        if not overdue_tasks_df.empty:
-            for _, task in overdue_tasks_df.iterrows():
-                report_content += f"- **Tarefa:** {task['name']} | **Equipe:** {task['team']} | **Vencimento:** {task['due_date'].strftime('%d/%m/%Y')}\\n"
-        else:
-            report_content += "Nenhuma tarefa atrasada no momento.\\n"
-            
-        st.markdown(report_content)
-        
-        st.download_button(
-            label="📥 Baixar Relatório de Fiscalização",
-            data=report_content,
-            file_name=f"relatorio_fiscalizacao_{datetime.now().strftime('%Y%m%d')}.md",
-            mime="text/markdown"
-        )
+        # Botão de download e pré-visualização para o Fluxograma
+        if 'flowchart_html' in st.session_state and st.session_state.flowchart_html:
+            st.download_button(
+                label="📥 Baixar Fluxograma (.html)",
+                data=st.session_state.flowchart_html,
+                file_name="fluxograma_obra.html",
+                mime="text/html",
+                use_container_width=True
+            )
+            st.markdown("###### Pré-visualização:")
+            with st.container(height=400, border=True):
+                st.components.v1.html(st.session_state.flowchart_html, height=400, scrolling=True)
